@@ -5,6 +5,10 @@ use crate::vector::{Angle, Split, Vector2, Vector4};
 
 pub const TRAJECTORY_SIZE: usize = 256;
 
+pub trait State<T> {
+    fn set_state(&mut self, state: &T) -> &mut Self;
+}
+
 #[derive(Copy, Clone)]
 pub struct Point2 {
     pub mass: f64,
@@ -14,6 +18,24 @@ pub struct Point2 {
 
     trajectory: [Vector2; TRAJECTORY_SIZE],
     index: usize,
+}
+
+impl State<Vector4> for Point2 {
+    fn set_state(&mut self, state: &Vector4) -> &mut Self {
+        self.position.x = state.x;
+        self.position.y = state.y;
+        self.speed.x = state.z;
+        self.speed.y = state.w;
+        self
+    }
+}
+
+impl State<Point2> for Point2 {
+    fn set_state(&mut self, state: &Point2) -> &mut Self {
+        self.position = state.position;
+        self.speed = state.speed;
+        self
+    }
 }
 
 impl Point2 {
@@ -58,6 +80,12 @@ impl Point2 {
         self.position.y = state.y;
         self.speed.x = state.z;
         self.speed.y = state.w;
+        self
+    }
+
+    pub fn copy_state(&mut self, point: &Self) -> &mut Self {
+        self.position = point.position;
+        self.speed = point.speed;
         self
     }
 
