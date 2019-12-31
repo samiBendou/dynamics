@@ -1,14 +1,8 @@
-use crate::common::Direction;
 use crate::dynamics::{Cluster, point::Point2};
 use crate::units::consts::G_UNIV;
 use crate::vector::*;
 
-const BASE_ACCELERATION: f64 = 500.;
 const RESISTANCE: f64 = 0.001;
-
-pub fn push(point: &Point2, direction: &Direction) -> Vector2 {
-    direction.as_vector() * (BASE_ACCELERATION / point.mass)
-}
 
 pub fn nav_stokes(point: &Point2) -> Vector2 {
     point.speed * (-RESISTANCE / point.mass * point.speed.magnitude())
