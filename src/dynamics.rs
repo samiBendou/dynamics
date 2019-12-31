@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 
 use rand::Rng;
 
-use crate::dynamics::point::Point2;
+use crate::dynamics::point::{Point2, State};
 use crate::vector::{Vector2, Vector4};
 use crate::shapes::ellipse::Circle;
 

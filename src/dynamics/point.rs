@@ -75,20 +75,6 @@ impl Point2 {
         Vector4::concat(&self.position, &self.speed)
     }
 
-    pub fn set_state(&mut self, state: &Vector4) -> &mut Self {
-        self.position.x = state.x;
-        self.position.y = state.y;
-        self.speed.x = state.z;
-        self.speed.y = state.w;
-        self
-    }
-
-    pub fn copy_state(&mut self, point: &Self) -> &mut Self {
-        self.position = point.position;
-        self.speed = point.speed;
-        self
-    }
-
     pub fn reset0(&mut self) -> &mut Self {
         self.position.reset0();
         self.speed.reset0();
@@ -127,6 +113,11 @@ impl Point2 {
     pub fn position(&self, k: usize) -> &Vector2 {
         let index = (k + self.index + 1) % TRAJECTORY_SIZE;
         &self.trajectory[index]
+    }
+
+    pub fn position_mut(&mut self, k: usize) -> &mut Vector2 {
+        let index = (k + self.index + 1) % TRAJECTORY_SIZE;
+        &mut self.trajectory[index]
     }
 
     pub fn update_trajectory(&mut self) {
