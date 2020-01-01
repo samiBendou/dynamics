@@ -1,11 +1,13 @@
-use std::fmt::Debug;
 use std::fmt;
+use std::fmt::Debug;
 use std::ops::{Index, IndexMut};
+
 use rand::Rng;
-use crate::geometry;
-use crate::geometry::vector::{Vector2, Vector4};
-use crate::dynamics::point::Point2;
+
 use crate::dynamics::orbital::Orbit;
+use crate::dynamics::point::Point2;
+use crate::geometry;
+use crate::geometry::vector::{Vector, Vector2, Vector4};
 
 pub mod point;
 pub mod forces;
@@ -38,7 +40,7 @@ pub struct Body {
 }
 
 impl Body {
-    #[inline]
+
     pub fn new(name: &str, center: Point2) -> Body {
         Body { name: String::from(name), center }
     }
@@ -65,7 +67,7 @@ pub struct Cluster {
 }
 
 impl Cluster {
-    #[inline]
+
     pub fn new(bodies: Vec<Body>) -> Self {
         Cluster {
             bodies,
@@ -191,17 +193,17 @@ impl Cluster {
         self
     }
 
-    #[inline]
+
     pub fn barycenter(&self) -> &Point2 {
         &self.barycenter
     }
 
-    #[inline]
+
     pub fn origin(&self) -> &geometry::point::Point2 {
         &self.origin
     }
 
-    #[inline]
+
     fn update_origin(&mut self) -> &mut Self {
         self.origin = match self.frame {
             Frame::Zero => geometry::point::Point2::zeros(),
@@ -236,23 +238,23 @@ impl Cluster {
         self
     }
 
-    #[inline]
+
     pub fn current(&self) -> Option<&Body> {
         self.bodies.get(self.current)
     }
 
-    #[inline]
+
     pub fn current_mut(&mut self) -> Option<&mut Body> {
         self.bodies.get_mut(self.current)
     }
 
-    #[inline]
+
     pub fn last(&self) -> Option<&Body> { self.bodies.last() }
 
-    #[inline]
+
     pub fn last_mut(&mut self) -> Option<&mut Body> { self.bodies.last_mut() }
 
-    #[inline]
+
     pub fn current_index(&self) -> usize {
         self.current
     }
@@ -275,27 +277,27 @@ impl Cluster {
         self.update_barycenter()
     }
 
-    #[inline]
+
     pub fn reset0_current(&mut self) -> &mut Self {
         self.bodies[self.current].center.state.reset0();
         self.update_barycenter()
     }
 
-    #[inline]
+
     pub fn reset_current_trajectory(&mut self) -> &mut Self {
         let position = self.bodies[self.current].center.state.position;
         self.bodies[self.current].center.state.trajectory.reset(&position);
         self.update_barycenter()
     }
 
-    #[inline]
+
     pub fn update_current_trajectory(&mut self) -> &mut Self {
         let position = self.bodies[self.current].center.state.position;
         self.bodies[self.current].center.state.trajectory.push(&position);
         self
     }
 
-    #[inline]
+
     pub fn translate_current(&mut self, direction: &Vector2) -> &mut Self {
         self.bodies[self.current].center.state.position += *direction;
         self
@@ -308,10 +310,10 @@ impl Cluster {
         self
     }
 
-    pub fn accelerate(&mut self, accelerations: &Vec<Vector4>, dt: f64) -> &mut Self {
+    pub fn accelerate(&mut self, dt: f64) -> &mut Self {
         let len = self.bodies.len();
         for i in 0..len {
-            self.bodies[i].center.accelerate(&accelerations[i], dt);
+            self.bodies[i].center.accelerate(dt);
         }
         self
     }
@@ -319,7 +321,8 @@ impl Cluster {
     pub fn apply<T>(&mut self, dt: f64, iterations: u32, mut f: T) where
         T: FnMut(&Cluster, usize) -> Vector4 {
         let len = self.bodies.len();
-        let mut accelerations: Vec<Vector4> = self.bodies.iter().map(|body| Vector4::zeros()).collect();
+        let half_dt = 0.5 * dt;
+        let frac_1_6 = 1. / 6.;
         let mut state;
         let mut k1;
         let mut k2;
@@ -330,17 +333,17 @@ impl Cluster {
         for _ in 0..iterations {
             for i in 0..len {
                 k1 = f(self, i);
-                state = self.bodies[i].center.state.clone();
-                self.bodies[i].center.state = state + k1 * 0.5 * dt;
+                state = self.bodies[i].center.state.vector();
+                self.bodies[i].center.state.set_vector(&(state + k1 * half_dt));
                 k2 = f(self, i);
-                self.bodies[i].center.state = state + k2 * 0.5 * dt;
+                self.bodies[i].center.state.set_vector(&(state + k2 * half_dt));
                 k3 = f(self, i);
-                self.bodies[i].center.state = state + k3 * dt;
+                self.bodies[i].center.state.set_vector(&(state + k3 * dt));
                 k4 = f(self, i);
-                self.bodies[i].center.state = state;
-                accelerations[i] = (k1 + (k2 + k3) * 2. + k4) * (1. / 6.);
+                self.bodies[i].center.state.set_vector(&state);
+                self.bodies[i].center.gradient = (k1 + (k2 + k3) * 2. + k4) * frac_1_6;
             }
-            self.accelerate(&accelerations, dt);
+            self.accelerate(dt);
         }
         self.update_barycenter();
         self.update_origin();
@@ -428,7 +431,7 @@ u        self.bodies[last].shape.set_cursor_speed(cursor, middle, scale);
     }
     */
 
-    #[inline]
+
     fn decrease_current(&mut self) -> &mut Self {
         if self.current > 0 {
             self.current -= 1;
@@ -436,7 +439,7 @@ u        self.bodies[last].shape.set_cursor_speed(cursor, middle, scale);
         self
     }
 
-    #[inline]
+
     fn increase_current(&mut self, bypass_last: bool) -> &mut Self {
         let offset = if bypass_last { 2 } else { 1 };
         if self.current < self.bodies.len() - offset {

@@ -11,6 +11,8 @@ use std::ops::{
     SubAssign,
 };
 
+use crate::geometry::point::Point2;
+
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
 pub static N_EX: Vector2 = Vector2 { x: -1., y: 0. };
 pub static EY: Vector2 = Vector2 { x: 0., y: 1. };
@@ -20,6 +22,11 @@ pub static ZERO: Vector2 = Vector2 { x: 0., y: 0. };
 pub trait Array<T> {
     fn array(&self) -> T;
     fn set_array(&mut self, arr: &T) -> &mut Self;
+}
+
+pub trait Vector<T> {
+    fn vector(&self) -> T;
+    fn set_vector(&mut self, arr: &T) -> &mut Self;
 }
 
 pub trait Split<T> {
@@ -90,21 +97,38 @@ pub struct Vector4 {
     pub w: f64,
 }
 
+impl From<[f64; 2]> for Vector2 {
+    fn from(array: [f64; 2]) -> Self {
+        Vector2::new(array[0], array[1])
+    }
+}
+
+impl From<[f64; 4]> for Vector4 {
+    fn from(array: [f64; 4]) -> Self {
+        Vector4::new(array[0], array[1], array[2], array[3])
+    }
+}
+
+impl From<Point2> for Vector4 {
+    fn from(point: Point2) -> Self {
+        Vector4::new(point.position.x, point.position.y, point.speed.x, point.speed.y)
+    }
+}
 
 macro_rules! impl_vector {
     ($VectorN:ident { $($field:ident),+ }, $n: expr) => {
         impl $VectorN {
-            #[inline]
+
             pub fn new($($field: f64),+) -> Self {
                 $VectorN { $($field: $field),+ }
             }
 
-            #[inline]
+
             pub fn zeros() -> Self {
                 $VectorN { $($field: 0f64),+ }
             }
 
-            #[inline]
+
             pub fn ones() -> Self {
                 $VectorN { $($field: 1f64),+ }
             }
@@ -118,7 +142,7 @@ macro_rules! impl_vector {
                 barycenter
             }
 
-            #[inline]
+
             pub fn scalar(s: f64) -> Self {
                 $VectorN { $($field: s),+ }
             }
@@ -145,7 +169,7 @@ macro_rules! impl_vector {
                 ret
             }
 
-            #[inline]
+
             pub fn magnitude(&self) -> f64 {
                 self.magnitude2().sqrt()
             }
@@ -160,7 +184,7 @@ macro_rules! impl_vector {
                 ret
             }
 
-            #[inline]
+
             pub fn distance(&self, rhs: Self) -> f64 {
                 self.distance2(rhs).sqrt()
             }
@@ -298,6 +322,7 @@ impl Angle for Vector2 {
         self.area(rhs) / (self.magnitude() * rhs.magnitude())
     }
 
+    //noinspection RsTypeCheck
     fn angle(&self, rhs: &Self) -> f64 {
         self.cos(rhs).acos()
     }
@@ -352,12 +377,11 @@ impl coordinates::Polar for Vector2 {
 }
 
 impl transforms::Cartesian2 for Vector2 {
-    #[inline]
     fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
         Vector2::new(self.x * scale + middle.x, middle.y - self.y * scale)
     }
 
-    #[inline]
+
     fn centered(&self, middle: &Vector2, scale: f64) -> Self {
         Vector2::new((self.x - middle.x) / scale, (middle.y - self.y) / scale)
     }
@@ -403,31 +427,17 @@ impl Array<[f64; 2]> for Vector2 {
     }
 }
 
-impl From<[f64; 2]> for Vector2 {
-    fn from(array: [f64; 2]) -> Self {
-        Vector2::new(array[0], array[1])
+impl Array<[f64; 4]> for Vector4 {
+    fn array(&self) -> [f64; 4] {
+        [self.x, self.y, self.z, self.w]
     }
-}
 
-impl Index<usize> for Vector2 {
-    type Output = f64;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        if index == 0 {
-            &self.x
-        } else {
-            &self.y
-        }
-    }
-}
-
-impl IndexMut<usize> for Vector2 {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        if index == 0 {
-            &mut self.x
-        } else {
-            &mut self.y
-        }
+    fn set_array(&mut self, array: &[f64; 4]) -> &mut Self {
+        self.x = array[0];
+        self.y = array[1];
+        self.z = array[2];
+        self.w = array[3];
+        self
     }
 }
 
@@ -480,8 +490,8 @@ mod tests {
         fn polar_coordinates() {
             let u = Vector2::ones();
 
-            assert_eq!(u.radius(), std::f64::consts::SQRT_2);
-            assert_eq!(u.angle(), std::f64::consts::FRAC_PI_4);
+            assert_eq!(u.rho(), std::f64::consts::SQRT_2);
+            assert_eq!(u.phi(), std::f64::consts::FRAC_PI_4);
         }
 
         #[test]

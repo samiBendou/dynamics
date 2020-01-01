@@ -1,6 +1,7 @@
 use std::fmt;
-use std::fmt::{Debug};
-use std::ops::{AddAssign, DivAssign, Mul, MulAssign, SubAssign, Add, Sub, Div};
+use std::fmt::Debug;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+
 use crate::geometry::vector::Vector2;
 
 pub const TRAJECTORY_SIZE: usize = 256;
@@ -55,23 +56,23 @@ impl Trajectory2 {
         self
     }
 
-    #[inline]
+
     pub fn push(&mut self, position: &Vector2) {
         self.positions[self.index] = *position;
         self.index = self.index_offset(0);
     }
 
-    #[inline]
+
     pub fn position(&self, i: usize) -> &Vector2 {
         &self.positions[self.index_offset(i)]
     }
 
-    #[inline]
+
     pub fn position_mut(&mut self, i: usize) -> &mut Vector2 {
         &mut self.positions[self.index_offset(i)]
     }
 
-    #[inline]
+
     fn index_offset(&self, i: usize) -> usize {
         (i + self.index + 1) % TRAJECTORY_SIZE
     }

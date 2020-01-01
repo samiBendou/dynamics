@@ -4,26 +4,27 @@ use crate::geometry::vector::{Angle, Split, Vector2, Vector4};
 #[derive(Copy, Clone)]
 pub struct Point2 {
     pub state: point::Point2,
+    pub gradient: Vector4,
     pub mass: f64,
 }
 
 impl Point2 {
-    #[inline]
+
     pub fn new(state: point::Point2, mass: f64) -> Point2 {
-        Point2 { state, mass }
+        Point2 { state, mass, gradient: Vector4::zeros() }
     }
 
-    #[inline]
+
     pub fn inertial(position: Vector2, speed: Vector2, mass: f64) -> Point2 {
         Point2::new(point::Point2::new(position, speed), mass)
     }
 
-    #[inline]
+
     pub fn immobile(position: Vector2, mass: f64) -> Point2 {
         Point2::new(point::Point2::from(position), mass)
     }
 
-    #[inline]
+
     pub fn zeros(mass: f64) -> Point2 {
         Point2::new(point::Point2::zeros(), mass)
     }
@@ -37,9 +38,8 @@ impl Point2 {
         self.state.position.area(&self.state.speed) * self.mass
     }
 
-    pub fn accelerate(&mut self, acceleration: &Vector4, dt: f64) -> &mut Self {
-        self.state.position += acceleration.upper() * dt;
-        self.state.speed += acceleration.lower() * dt;
+    pub fn accelerate(&mut self, dt: f64) -> &mut Self {
+        self.state += self.gradient * dt;
         self
     }
 }

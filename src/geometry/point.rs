@@ -1,9 +1,9 @@
 use std::fmt;
 use std::fmt::Debug;
-use std::ops::{AddAssign, DivAssign, Mul, MulAssign, SubAssign, Add, Sub, Div};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::geometry::vector::{Angle, Split, Vector2, Vector4};
 use crate::geometry::trajectory::Trajectory2;
+use crate::geometry::vector::{Array, Split, Vector, Vector2, Vector4};
 
 pub trait State<T> {
     fn set_state(&mut self, state: &T) -> &mut Self;
@@ -30,6 +30,7 @@ impl From<Vector4> for Point2 {
 
 
 impl Point2 {
+    //noinspection RsTypeCheck
     pub fn new(position: Vector2, speed: Vector2) -> Point2 {
         Point2 {
             position,
@@ -38,7 +39,7 @@ impl Point2 {
         }
     }
 
-    #[inline]
+
     pub fn zeros() -> Point2 {
         Point2::new(Vector2::zeros(), Vector2::zeros())
     }
@@ -87,6 +88,34 @@ impl Debug for Point2 {
             self.position,
             self.speed,
         )
+    }
+}
+
+impl Array<[f64; 4]> for Point2 {
+    fn array(&self) -> [f64; 4] {
+        [self.position.x, self.position.y, self.speed.x, self.speed.y]
+    }
+
+    fn set_array(&mut self, array: &[f64; 4]) -> &mut Self {
+        self.position.x = array[0];
+        self.position.y = array[1];
+        self.speed.x = array[2];
+        self.speed.y = array[3];
+        self
+    }
+}
+
+impl Vector<Vector4> for Point2 {
+    fn vector(&self) -> Vector4 {
+        Vector4::concat(&self.position, &self.speed)
+    }
+
+    fn set_vector(&mut self, vector: &Vector4) -> &mut Self {
+        self.position.x = vector.x;
+        self.position.y = vector.y;
+        self.speed.x = vector.z;
+        self.speed.y = vector.w;
+        self
     }
 }
 
