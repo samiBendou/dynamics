@@ -2,8 +2,7 @@ use std::fmt::{Debug, Error, Formatter};
 use std::ops::{
     Add, AddAssign,
     BitOr, Div,
-    DivAssign, Index,
-    IndexMut,
+    DivAssign,
     Mul,
     MulAssign,
     Neg, Not,
@@ -475,7 +474,6 @@ impl Split<Vector2> for Vector4 {
 mod tests {
     mod vector2 {
         use super::super::coordinates::*;
-        use super::super::transforms::*;
         use super::super::Vector2;
 
         #[test]

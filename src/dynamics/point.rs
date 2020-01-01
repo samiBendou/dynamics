@@ -1,5 +1,5 @@
 use crate::geometry::point;
-use crate::geometry::vector::{Angle, Split, Vector2, Vector4};
+use crate::geometry::vector::{Angle, Vector2, Vector4};
 
 #[derive(Copy, Clone)]
 pub struct Point2 {

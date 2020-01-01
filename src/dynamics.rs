@@ -78,7 +78,7 @@ impl Cluster {
         }
     }
 
-    pub fn orbital(cluster: orbital::Cluster, true_anomalies: Vec<f64>) -> Self {
+    pub fn orbital(cluster: &orbital::Cluster, true_anomalies: Vec<f64>) -> Self {
         let len = cluster.bodies.len();
         let mut bodies: Vec<Body> = Vec::with_capacity(len);
         let mut body;
@@ -87,26 +87,26 @@ impl Cluster {
                 &cluster.bodies[i].name,
                 &cluster.bodies[i].orbit,
                 true_anomalies[i],
-                cluster.bodies[i].mass
+                cluster.bodies[i].mass,
             );
             bodies.push(body);
         }
         Cluster::new(bodies)
     }
 
-    pub fn orbital_at(cluster: orbital::Cluster, true_anomaly: f64) -> Self {
+    pub fn orbital_at(cluster: &orbital::Cluster, true_anomaly: f64) -> Self {
         let mut true_anomalies = Vec::with_capacity(cluster.bodies.len());
-        for body in cluster.bodies.iter() {
+        for _ in cluster.bodies.iter() {
             true_anomalies.push(true_anomaly)
         }
         Cluster::orbital(cluster, true_anomalies)
     }
 
-    pub fn orbital_at_random(cluster: orbital::Cluster) -> Self {
+    pub fn orbital_at_random(cluster: &orbital::Cluster) -> Self {
         let two_pi = 2. * std::f64::consts::PI;
         let mut rng = rand::thread_rng();
         let mut true_anomalies: Vec<f64> = Vec::with_capacity(cluster.bodies.len());
-        for body in cluster.bodies.iter() {
+        for _ in cluster.bodies.iter() {
             true_anomalies.push(rng.gen_range(0., two_pi))
         }
         Cluster::orbital(cluster, true_anomalies)
@@ -271,12 +271,9 @@ impl Cluster {
         } else {
             self.decrease_current();
         }
-        if self.frame == Frame::Current {
-            self.reset_origin();
-        }
+        self.reset_origin();
         self.update_barycenter()
     }
-
 
     pub fn reset0_current(&mut self) -> &mut Self {
         self.bodies[self.current].center.state.reset0();
@@ -413,24 +410,6 @@ impl Cluster {
             self.bodies.remove(index)
         }
     }
-    /*
-    pub fn wait_drop(&mut self, cursor: &[f64; 2], middle: &Vector2, scale: f64) -> &mut Self {
-        let last = self.bodies.len() - 1;
-        self.bodies[last].shape.set_cursor_pos(cursor, middle, scale);
-        self.bodies[last].shape.center.clear_trajectory();
-        self.update_barycenter();
-        self
-    }
-
-    pub fn wait_speed(&mut self, cursor: &[f64; 2], middle: &Vector2, scale: f64) -> &mut Self {
-        let last = self.bodies.len() - 1;
-u        self.bodies[last].shape.set_cursor_speed(cursor, middle, scale);
-        self.bodies[last].shape.center.clear_trajectory();
-        self.update_barycenter();
-        self
-    }
-    */
-
 
     fn decrease_current(&mut self) -> &mut Self {
         if self.current > 0 {
@@ -438,7 +417,6 @@ u        self.bodies[last].shape.set_cursor_speed(cursor, middle, scale);
         }
         self
     }
-
 
     fn increase_current(&mut self, bypass_last: bool) -> &mut Self {
         let offset = if bypass_last { 2 } else { 1 };

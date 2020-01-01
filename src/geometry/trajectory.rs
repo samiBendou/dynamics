@@ -111,7 +111,7 @@ impl Add<Vector2> for Trajectory2 {
 impl AddAssign<Trajectory2> for Trajectory2 {
     fn add_assign(&mut self, rhs: Trajectory2) {
         for i in 0..TRAJECTORY_SIZE {
-            self.positions[i] += rhs.positions[i];
+            self.positions[self.index_offset(i)] += rhs.positions[rhs.index_offset(i)];
         }
     }
 }
@@ -147,7 +147,7 @@ impl Sub<Vector2> for Trajectory2 {
 impl SubAssign<Trajectory2> for Trajectory2 {
     fn sub_assign(&mut self, rhs: Trajectory2) {
         for i in 0..TRAJECTORY_SIZE {
-            self.positions[i] -= rhs.positions[i];
+            self.positions[self.index_offset(i)] -= rhs.positions[rhs.index_offset(i)];
         }
     }
 }

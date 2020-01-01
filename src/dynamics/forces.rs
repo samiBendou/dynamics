@@ -1,6 +1,6 @@
 use crate::dynamics::{Cluster, point::Point2};
-use crate::units::consts::G_UNIV;
 use crate::geometry::vector::*;
+use crate::units::consts::G_UNIV;
 
 const RESISTANCE: f64 = 0.001;
 
@@ -15,7 +15,7 @@ pub fn gravity(point: &Point2, cluster: &Cluster) -> Vector4 {
     let mut acceleration = Vector2::zeros();
     let mut distance: Vector2;
     let mut magnitude: f64;
-    for i in 0..cluster.len() {
+    for i in 0..len {
         distance = cluster[i].center.state.position - point.state.position;
         magnitude = distance.magnitude();
         if magnitude < std::f64::EPSILON {
