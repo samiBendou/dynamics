@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::geometry::trajectory::Trajectory2;
+use crate::geometry::trajectory;
 use crate::geometry::vector::{Array, Split, Vector, Vector2, Vector4};
 
 pub trait State<T> {
@@ -28,6 +29,11 @@ impl From<Vector4> for Point2 {
     }
 }
 
+pub const ZERO: Point2 = Point2 {
+    position: Vector2 { x: 0., y: 0. },
+    speed: Vector2 { x: 0., y: 0. },
+    trajectory: trajectory::ZERO,
+};
 
 impl Point2 {
     //noinspection RsTypeCheck
@@ -47,21 +53,18 @@ impl Point2 {
     pub fn reset0(&mut self) -> &mut Self {
         self.position.reset0();
         self.speed.reset0();
-        self.trajectory.reset0();
         self
     }
 
     pub fn reset1(&mut self) -> &mut Self {
         self.position.reset1();
         self.speed.reset1();
-        self.trajectory.reset1();
         self
     }
 
     pub fn reset(&mut self, position: &Vector2, speed: &Vector2) -> &mut Self {
         self.position = *position;
         self.speed = *speed;
-        self.trajectory.reset(position);
         self
     }
 
@@ -69,12 +72,15 @@ impl Point2 {
         self.position.distance(*position)
     }
 
-    pub fn set_origin(&mut self, origin: &Point2, old_origin: &Option<Point2>) -> &mut Self {
-        if let Some(old_origin) = old_origin {
-            *self += *old_origin;
-            self.trajectory += old_origin.trajectory;
-        }
+    pub fn update_trajectory(&mut self) -> &mut Self {
+        self.trajectory.push(&self.position);
+        self
+    }
+
+    pub fn update_origin(&mut self, origin: &Point2, old_origin: &Point2) -> &mut Self {
+        *self += *old_origin;
         *self -= *origin;
+        self.trajectory += old_origin.trajectory;
         self.trajectory -= origin.trajectory;
         self
     }

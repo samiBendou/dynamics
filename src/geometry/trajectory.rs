@@ -6,6 +6,8 @@ use crate::geometry::vector::Vector2;
 
 pub const TRAJECTORY_SIZE: usize = 256;
 
+pub const ZERO: Trajectory2 = Trajectory2 { positions: [Vector2 { x: 0., y: 0. }; TRAJECTORY_SIZE], index: 0 };
+
 #[derive(Copy, Clone)]
 pub struct Trajectory2 {
     positions: [Vector2; TRAJECTORY_SIZE],
