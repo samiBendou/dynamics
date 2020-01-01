@@ -15,3 +15,4 @@ pub fn random_color() -> [f32; 4] {
     let mut rng = rand::thread_rng();
     [rng.gen(), rng.gen(), rng.gen(), 1.]
 }
+

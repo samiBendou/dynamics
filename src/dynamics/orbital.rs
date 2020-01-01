@@ -6,8 +6,8 @@ use std::path::Path;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::vector::coordinates::Polar;
-use crate::vector::Vector2;
+use crate::geometry::vector::coordinates::Polar;
+use crate::geometry::vector::Vector2;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {

@@ -3,7 +3,7 @@ use std::ops::{Div, DivAssign, Mul, MulAssign};
 
 use consts::*;
 
-use crate::vector::Vector2;
+use crate::geometry::vector::Vector2;
 
 pub mod prefix;
 pub mod suffix;

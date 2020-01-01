@@ -57,7 +57,7 @@ pub mod coordinates {
 }
 
 pub mod transforms {
-    use crate::vector::Vector2;
+    use crate::geometry::vector::Vector2;
 
     pub trait Cartesian2 {
         fn left_up(&self, middle: &Vector2, scale: f64) -> Self;
@@ -352,10 +352,12 @@ impl coordinates::Polar for Vector2 {
 }
 
 impl transforms::Cartesian2 for Vector2 {
+    #[inline]
     fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
         Vector2::new(self.x * scale + middle.x, middle.y - self.y * scale)
     }
 
+    #[inline]
     fn centered(&self, middle: &Vector2, scale: f64) -> Self {
         Vector2::new((self.x - middle.x) / scale, (middle.y - self.y) / scale)
     }

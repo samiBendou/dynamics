@@ -1,5 +1,4 @@
-pub mod vector;
+pub mod common;
 pub mod dynamics;
 pub mod units;
-pub mod common;
-pub mod shapes;
+pub mod geometry;
