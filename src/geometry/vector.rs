@@ -86,9 +86,21 @@ impl From<[f64; 2]> for Vector2 {
     }
 }
 
+impl From<[f64; 3]> for Vector3 {
+    fn from(array: [f64; 3]) -> Self {
+        Vector3::new(array[0], array[1], array[2])
+    }
+}
+
 impl From<[f64; 4]> for Vector4 {
     fn from(array: [f64; 4]) -> Self {
         Vector4::new(array[0], array[1], array[2], array[3])
+    }
+}
+
+impl From<[f64; 6]> for Vector6 {
+    fn from(array: [f64; 6]) -> Self {
+        Vector6::new(array[0], array[1], array[2], array[3], array[4], array[5])
     }
 }
 
