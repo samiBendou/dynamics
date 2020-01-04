@@ -1,4 +1,5 @@
 use crate::dynamics::{Cluster, point::Point2};
+use crate::geometry::common::Split;
 use crate::geometry::vector::*;
 use crate::units::consts::G_UNIV;
 

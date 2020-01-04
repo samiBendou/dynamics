@@ -2,9 +2,10 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+use crate::geometry::common::{Array, Split, Vector};
 use crate::geometry::trajectory;
 use crate::geometry::trajectory::Trajectory2;
-use crate::geometry::vector::{Array, Split, Vector, Vector2, Vector4};
+use crate::geometry::vector::{Vector2, Vector4};
 
 pub trait State<T> {
     fn set_state(&mut self, state: &T) -> &mut Self;

@@ -7,8 +7,9 @@ use rand::Rng;
 use crate::dynamics::orbital::Orbit;
 use crate::dynamics::point::Point2;
 use crate::geometry;
+use crate::geometry::common::Vector;
 use crate::geometry::point::ZERO;
-use crate::geometry::vector::{Vector, Vector2, Vector4};
+use crate::geometry::vector::{Vector2, Vector4};
 
 pub mod point;
 pub mod forces;

@@ -10,6 +10,7 @@ use std::ops::{
     SubAssign,
 };
 
+use crate::geometry::common::{Angle, Array, Split};
 use crate::geometry::point::Point2;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
@@ -17,33 +18,6 @@ pub static N_EX: Vector2 = Vector2 { x: -1., y: 0. };
 pub static EY: Vector2 = Vector2 { x: 0., y: 1. };
 pub static N_EY: Vector2 = Vector2 { x: 0., y: -1. };
 pub static ZERO: Vector2 = Vector2 { x: 0., y: 0. };
-
-pub trait Array<T> {
-    fn array(&self) -> T;
-    fn set_array(&mut self, arr: &T) -> &mut Self;
-}
-
-pub trait Vector<T> {
-    fn vector(&self) -> T;
-    fn set_vector(&mut self, arr: &T) -> &mut Self;
-}
-
-pub trait Split<T> {
-    fn split(&self) -> [T; 2];
-    fn concat(lhs: &T, rhs: &T) -> Self;
-    fn upper(&self) -> T;
-    fn lower(&self) -> T;
-    fn set_upper(&mut self, vector: &T) -> &mut Self;
-    fn set_lower(&mut self, vector: &T) -> &mut Self;
-}
-
-pub trait Angle {
-    fn cos(&self, _: &Self) -> f64;
-    fn sin(&self, _: &Self) -> f64;
-    fn angle(&self, _: &Self) -> f64;
-    fn area(&self, _: &Self) -> f64;
-    fn cross(&self, _: &Self) -> Vector3;
-}
 
 pub mod coordinates {
     pub trait Cartesian2 {
@@ -93,6 +67,16 @@ pub struct Vector4 {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+    pub w: f64,
+}
+
+#[derive(Copy, Clone)]
+pub struct Vector6 {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub u: f64,
+    pub v: f64,
     pub w: f64,
 }
 
@@ -311,6 +295,7 @@ macro_rules! impl_vector {
 impl_vector!(Vector2 {x, y}, 2);
 impl_vector!(Vector3 {x, y, z}, 3);
 impl_vector!(Vector4 {x, y, z, w}, 4);
+impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
 
 impl Angle for Vector2 {
     fn cos(&self, rhs: &Self) -> f64 {
