@@ -187,7 +187,7 @@ macro_rules! impl_vector {
             }
         }
 
-        impl Reset<f64> for $VectorN {
+        impl Reset<$VectorN> for $VectorN {
             #[inline]
             fn reset0(&mut self) -> &mut Self {
                 $(self.$field = 0.;)+
@@ -201,8 +201,8 @@ macro_rules! impl_vector {
             }
 
             #[inline]
-            fn reset(&mut self, val: &f64) -> &mut Self {
-                $(self.$field = *val;)+
+            fn reset(&mut self, val: &$VectorN) -> &mut Self {
+                $(self.$field = val.$field;)+
                 self
             }
         }

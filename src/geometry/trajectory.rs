@@ -75,7 +75,7 @@ impl<T> Initializer for Trajectory<T> where
 }
 
 impl<T> Reset<T> for Trajectory<T> where
-    T: Reset<T> {
+    T: Reset<T> + Copy + Clone {
     #[inline]
     fn reset0(&mut self) -> &mut Self {
         for position in self.positions.iter_mut() {
@@ -93,9 +93,9 @@ impl<T> Reset<T> for Trajectory<T> where
     }
 
     #[inline]
-    fn reset(&mut self, position: &T) -> &mut Self {
+    fn reset(&mut self, val: &T) -> &mut Self {
         for pos in self.positions.iter_mut() {
-            *pos = *position;
+            pos.reset(val);
         }
         self
     }
@@ -125,7 +125,7 @@ impl<T> Add<Trajectory<T>> for Trajectory<T> where
 }
 
 impl<T> Add<T> for Trajectory<T> where
-    T: AddAssign<T> {
+    T: AddAssign<T> + Copy + Clone {
     type Output = Trajectory<T>;
 
     #[inline]
@@ -147,7 +147,7 @@ impl<T> AddAssign<Trajectory<T>> for Trajectory<T> where
 }
 
 impl<T> AddAssign<T> for Trajectory<T> where
-    T: AddAssign<T> {
+    T: AddAssign<T> + Copy + Clone {
     #[inline]
     fn add_assign(&mut self, rhs: T) {
         for i in 0..TRAJECTORY_SIZE {
@@ -169,7 +169,7 @@ impl<T> Sub<Trajectory<T>> for Trajectory<T> where
 }
 
 impl<T> Sub<T> for Trajectory<T> where
-    T: SubAssign<T> {
+    T: SubAssign<T> + Copy + Clone {
     type Output = Trajectory<T>;
 
     #[inline]
@@ -191,7 +191,7 @@ impl<T> SubAssign<Trajectory<T>> for Trajectory<T> where
 }
 
 impl<T> SubAssign<T> for Trajectory<T> where
-    T: SubAssign<T> {
+    T: SubAssign<T> + Copy + Clone {
     #[inline]
     fn sub_assign(&mut self, rhs: T) {
         for i in 0..TRAJECTORY_SIZE {
@@ -201,7 +201,7 @@ impl<T> SubAssign<T> for Trajectory<T> where
 }
 
 impl<T> Mul<f64> for Trajectory<T> where
-    T: MulAssign<f64> {
+    T: MulAssign<f64> + Copy + Clone {
     type Output = Trajectory<T>;
 
     #[inline]
@@ -213,7 +213,7 @@ impl<T> Mul<f64> for Trajectory<T> where
 }
 
 impl<T> MulAssign<f64> for Trajectory<T> where
-    T: MulAssign<f64> {
+    T: MulAssign<f64> + Copy + Clone {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         for i in 0..TRAJECTORY_SIZE {
@@ -223,7 +223,7 @@ impl<T> MulAssign<f64> for Trajectory<T> where
 }
 
 impl<T> Div<f64> for Trajectory<T> where
-    T: DivAssign<f64> {
+    T: DivAssign<f64> + Copy + Clone {
     type Output = Trajectory<T>;
 
     #[inline]
@@ -235,7 +235,7 @@ impl<T> Div<f64> for Trajectory<T> where
 }
 
 impl<T> DivAssign<f64> for Trajectory<T> where
-    T: DivAssign<f64> {
+    T: DivAssign<f64> + Copy + Clone {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
         for i in 0..TRAJECTORY_SIZE {
