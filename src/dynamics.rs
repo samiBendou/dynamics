@@ -233,6 +233,7 @@ impl Cluster {
         self
     }
 
+    #[inline]
     fn current_origin(&mut self) -> &geometry::point::Point2 {
         if self.is_empty() {
             return &ZERO;
@@ -256,6 +257,7 @@ impl Cluster {
         self
     }
 
+    #[inline]
     pub fn update_barycenter(&mut self) -> &mut Self {
         self.barycenter.mass = 0.;
         self.barycenter.state.reset0();
@@ -360,7 +362,7 @@ impl Cluster {
             .set_relative()
             .update_trajectory()
     }
-
+    #[inline]
     fn set_absolute(&mut self) -> &mut Self {
         self.barycenter.state += self.origin;
         for body in self.bodies.iter_mut() {
@@ -368,7 +370,7 @@ impl Cluster {
         }
         self
     }
-
+    #[inline]
     fn set_relative(&mut self) -> &mut Self {
         self.barycenter.state -= self.origin;
         for body in self.bodies.iter_mut() {
@@ -376,7 +378,7 @@ impl Cluster {
         }
         self
     }
-
+    #[inline]
     fn update_trajectory(&mut self) -> &mut Self {
         self.barycenter.state.update_trajectory();
         self.origin.update_trajectory();
