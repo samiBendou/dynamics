@@ -12,6 +12,7 @@ use std::ops::{
 
 use crate::geometry::common::{Angle, Array, Initializer, Metric, Reset, Split};
 use crate::geometry::point::Point2;
+use crate::geometry::vector::coordinates::Polar;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
 pub static N_EX: Vector2 = Vector2 { x: -1., y: 0. };
@@ -21,18 +22,40 @@ pub static ZERO: Vector2 = Vector2 { x: 0., y: 0. };
 
 pub mod coordinates {
     pub trait Cartesian2 {
-        fn unit_neg_x() -> Self;
         fn unit_x() -> Self;
+        fn unit_neg_x() -> Self;
         fn unit_y() -> Self;
         fn unit_neg_y() -> Self;
     }
 
+    pub trait Cartesian3 {
+        fn unit_z() -> Self;
+        fn unit_neg_z() -> Self;
+    }
+
     pub trait Polar {
-        fn polar(mag: f64, ang: f64) -> Self;
-        fn unit_rho(ang: f64) -> Self;
-        fn unit_phi(ang: f64) -> Self;
+        fn from_polar(rho: f64, phi: f64) -> Self;
+        fn set_polar(&mut self, rho: f64, phi: f64) -> &mut Self;
+        fn unit_rho(phi: f64) -> Self;
+        fn unit_phi(phi: f64) -> Self;
         fn rho(&self) -> f64;
         fn phi(&self) -> f64;
+        fn set_rho(&mut self, rho: f64) -> &mut Self;
+        fn set_phi(&mut self, phi: f64) -> &mut Self;
+    }
+
+    pub trait Cylindrical {
+        fn from_cylindrical(rho: f64, phi: f64, z: f64) -> Self;
+        fn set_cylindrical(&mut self, rho: f64, phi: f64, z: f64) -> &mut Self;
+    }
+
+    pub trait Spherical {
+        fn from_spherical(radius: f64, phi: f64, theta: f64) -> Self;
+        fn set_spherical(&mut self, radius: f64, phi: f64, theta: f64) -> &mut Self;
+        fn unit_radius(phi: f64, theta: f64) -> Self;
+        fn unit_theta(phi: f64, theta: f64) -> Self;
+        fn theta(&self) -> f64;
+        fn set_theta(&mut self, theta: f64) -> &mut Self;
     }
 }
 
@@ -44,8 +67,6 @@ pub mod transforms {
         fn centered(&self, middle: &Vector2, scale: f64) -> Self;
         fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
         fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
-        fn rotate(&mut self, angle: f64) -> &mut Self;
-        fn rotate_translate(&mut self, angle: f64, direction: &Vector2) -> &mut Self;
     }
 }
 
@@ -367,13 +388,44 @@ impl Angle for Vector2 {
     }
 }
 
-impl coordinates::Cartesian2 for Vector2 {
-    fn unit_neg_x() -> Self {
-        Vector2 { x: -1., y: 0. }
+impl Angle for Vector3 {
+    #[inline]
+    fn cos(&self, rhs: &Self) -> f64 {
+        self.dot(rhs) / (self.magnitude() * rhs.magnitude())
     }
 
+    #[inline]
+    fn sin(&self, rhs: &Self) -> f64 {
+        self.area(rhs) / (self.magnitude() * rhs.magnitude())
+    }
+
+    //noinspection RsTypeCheck
+    #[inline]
+    fn angle(&self, rhs: &Self) -> f64 {
+        self.cos(rhs).acos()
+    }
+
+    #[inline]
+    fn area(&self, rhs: &Self) -> f64 {
+        self.cross(rhs).magnitude()
+    }
+
+    #[inline]
+    fn cross(&self, rhs: &Self) -> Vector3 {
+        let x = self.y * rhs.z - self.z * rhs.y;
+        let y = self.z * rhs.x - self.x * rhs.z;
+        let z = self.x * rhs.y - self.y * rhs.x;
+        Vector3::new(x, y, z)
+    }
+}
+
+impl coordinates::Cartesian2 for Vector2 {
     fn unit_x() -> Self {
         Vector2 { x: 1., y: 0. }
+    }
+
+    fn unit_neg_x() -> Self {
+        Vector2 { x: -1., y: 0. }
     }
 
     fn unit_y() -> Self {
@@ -385,10 +437,45 @@ impl coordinates::Cartesian2 for Vector2 {
     }
 }
 
+impl coordinates::Cartesian2 for Vector3 {
+    fn unit_x() -> Self {
+        Vector3 { x: 1., y: 0., z: 0. }
+    }
+
+    fn unit_neg_x() -> Self {
+        Vector3 { x: -1., y: 0., z: 0. }
+    }
+
+    fn unit_y() -> Self {
+        Vector3 { x: 0., y: 1., z: 0. }
+    }
+
+    fn unit_neg_y() -> Self {
+        Vector3 { x: 0., y: -1., z: 0. }
+    }
+}
+
+impl coordinates::Cartesian3 for Vector3 {
+    fn unit_z() -> Self {
+        Vector3 { x: 0., y: 0., z: 1. }
+    }
+
+    fn unit_neg_z() -> Self {
+        Vector3 { x: 0., y: 0., z: -1. }
+    }
+}
+
 impl coordinates::Polar for Vector2 {
     #[inline]
-    fn polar(mag: f64, ang: f64) -> Self {
-        Vector2 { x: mag * ang.cos(), y: mag * ang.sin() }
+    fn from_polar(rho: f64, phi: f64) -> Self {
+        Vector2 { x: rho * phi.cos(), y: rho * phi.sin() }
+    }
+
+    #[inline]
+    fn set_polar(&mut self, rho: f64, phi: f64) -> &mut Self {
+        self.x = rho * phi.cos();
+        self.y = rho * phi.sin();
+        self
     }
 
     #[inline]
@@ -409,6 +496,126 @@ impl coordinates::Polar for Vector2 {
     #[inline]
     fn phi(&self) -> f64 {
         (self.y).atan2(self.x)
+    }
+
+    #[inline]
+    fn set_rho(&mut self, rho: f64) -> &mut Self {
+        self.set_polar(rho, self.phi())
+    }
+
+    #[inline]
+    fn set_phi(&mut self, phi: f64) -> &mut Self {
+        self.set_polar(self.rho(), phi)
+    }
+}
+
+impl coordinates::Polar for Vector3 {
+    #[inline]
+    fn from_polar(rho: f64, phi: f64) -> Self {
+        Vector3 { x: rho * phi.cos(), y: rho * phi.sin(), z: 0. }
+    }
+
+    #[inline]
+    fn set_polar(&mut self, rho: f64, phi: f64) -> &mut Self {
+        self.x = rho * phi.cos();
+        self.y = rho * phi.sin();
+        self
+    }
+
+    #[inline]
+    fn unit_rho(phi: f64) -> Self {
+        Vector3 { x: phi.cos(), y: phi.sin(), z: 0. }
+    }
+
+    #[inline]
+    fn unit_phi(phi: f64) -> Self {
+        Vector3 { x: -phi.sin(), y: phi.cos(), z: 0. }
+    }
+
+    #[inline]
+    fn rho(&self) -> f64 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    #[inline]
+    fn phi(&self) -> f64 {
+        (self.y).atan2(self.x)
+    }
+
+    #[inline]
+    fn set_rho(&mut self, rho: f64) -> &mut Self {
+        self.set_polar(rho, self.phi())
+    }
+
+    #[inline]
+    fn set_phi(&mut self, phi: f64) -> &mut Self {
+        self.set_polar(self.rho(), phi)
+    }
+}
+
+impl coordinates::Cylindrical for Vector3 {
+    #[inline]
+    fn from_cylindrical(rho: f64, phi: f64, z: f64) -> Self {
+        Vector3 { x: rho * phi.cos(), y: rho * phi.sin(), z }
+    }
+
+    #[inline]
+    fn set_cylindrical(&mut self, rho: f64, phi: f64, z: f64) -> &mut Self {
+        self.x = rho * phi.cos();
+        self.y = rho * phi.sin();
+        self.z = z;
+        self
+    }
+}
+
+impl coordinates::Spherical for Vector3 {
+    #[inline]
+    fn from_spherical(radius: f64, phi: f64, theta: f64) -> Self {
+        let s = theta.sin();
+        Vector3 {
+            x: radius * s * phi.cos(),
+            y: radius * s * phi.sin(),
+            z: radius * theta.cos(),
+        }
+    }
+
+    #[inline]
+    fn set_spherical(&mut self, radius: f64, phi: f64, theta: f64) -> &mut Self {
+        let s = theta.sin();
+        self.x = radius * s * phi.cos();
+        self.y = radius * s * phi.sin();
+        self.z = radius * theta.cos();
+        self
+    }
+
+    #[inline]
+    fn unit_radius(phi: f64, theta: f64) -> Self {
+        let s = theta.sin();
+        Vector3 {
+            x: s * phi.cos(),
+            y: s * phi.sin(),
+            z: theta.cos(),
+        }
+    }
+
+    #[inline]
+    fn unit_theta(phi: f64, theta: f64) -> Self {
+        let c = theta.cos();
+        Vector3 {
+            x: c * phi.cos(),
+            y: c * phi.sin(),
+            z: -theta.sin(),
+        }
+    }
+
+    #[inline]
+    fn theta(&self) -> f64 {
+        (self.x * self.x + self.y * self.y).atan2(self.z)
+    }
+
+    #[inline]
+    fn set_theta(&mut self, theta: f64) -> &mut Self {
+        self.set_spherical(self.magnitude(), self.phi(), self.theta())
     }
 }
 
@@ -436,20 +643,30 @@ impl transforms::Cartesian2 for Vector2 {
         self.y = (middle.y - self.y) / scale;
         self
     }
+}
 
-    fn rotate(&mut self, angle: f64) -> &mut Self {
-        let c = angle.cos();
-        let s = angle.sin();
-        self.x = self.x * c - self.y * s;
-        self.y = self.x * s + self.y * c;
+impl transforms::Cartesian2 for Vector3 {
+    #[inline]
+    fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
+        Vector3::new(self.x * scale + middle.x, middle.y - self.y * scale, 0.)
+    }
+
+    #[inline]
+    fn centered(&self, middle: &Vector2, scale: f64) -> Self {
+        Vector3::new((self.x - middle.x) / scale, (middle.y - self.y) / scale, 0.)
+    }
+
+    #[inline]
+    fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
+        self.x = self.x * scale + middle.x;
+        self.y = middle.y - self.y * scale;
         self
     }
 
-    fn rotate_translate(&mut self, angle: f64, direction: &Vector2) -> &mut Self {
-        let c = angle.cos();
-        let s = angle.sin();
-        self.x = self.x * c - self.y * s + direction.x;
-        self.y = self.x * s + self.y * c + direction.y;
+    #[inline]
+    fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
+        self.x = (self.x - middle.x) / scale;
+        self.y = (middle.y - self.y) / scale;
         self
     }
 }
@@ -468,6 +685,21 @@ impl Array<[f64; 2]> for Vector2 {
     }
 }
 
+impl Array<[f64; 3]> for Vector3 {
+    #[inline]
+    fn array(&self) -> [f64; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    #[inline]
+    fn set_array(&mut self, array: &[f64; 3]) -> &mut Self {
+        self.x = array[0];
+        self.y = array[1];
+        self.z = array[2];
+        self
+    }
+}
+
 impl Array<[f64; 4]> for Vector4 {
     #[inline]
     fn array(&self) -> [f64; 4] {
@@ -480,6 +712,24 @@ impl Array<[f64; 4]> for Vector4 {
         self.y = array[1];
         self.z = array[2];
         self.w = array[3];
+        self
+    }
+}
+
+impl Array<[f64; 6]> for Vector6 {
+    #[inline]
+    fn array(&self) -> [f64; 6] {
+        [self.x, self.y, self.z, self.u, self.v, self.w]
+    }
+
+    #[inline]
+    fn set_array(&mut self, array: &[f64; 6]) -> &mut Self {
+        self.x = array[0];
+        self.y = array[1];
+        self.z = array[2];
+        self.u = array[3];
+        self.v = array[4];
+        self.w = array[5];
         self
     }
 }
@@ -514,6 +764,42 @@ impl Split<Vector2> for Vector4 {
     fn set_lower(&mut self, vector: &Vector2) -> &mut Self {
         self.z = vector.x;
         self.w = vector.y;
+        self
+    }
+}
+
+impl Split<Vector3> for Vector6 {
+    fn split(&self) -> [Vector3; 2] {
+        [self.upper(), self.lower()]
+    }
+
+    fn concat(lhs: &Vector3, rhs: &Vector3) -> Self {
+        Vector6::new(lhs.x, lhs.y, lhs.z, rhs.x, rhs.y, rhs.z)
+    }
+
+    #[inline]
+    fn upper(&self) -> Vector3 {
+        Vector3::new(self.x, self.y, self.z)
+    }
+
+    #[inline]
+    fn lower(&self) -> Vector3 {
+        Vector3::new(self.u, self.v, self.w)
+    }
+
+    #[inline]
+    fn set_upper(&mut self, vector: &Vector3) -> &mut Self {
+        self.x = vector.x;
+        self.y = vector.y;
+        self.z = vector.z;
+        self
+    }
+
+    #[inline]
+    fn set_lower(&mut self, vector: &Vector3) -> &mut Self {
+        self.u = vector.x;
+        self.v = vector.y;
+        self.w = vector.z;
         self
     }
 }

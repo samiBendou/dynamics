@@ -5,9 +5,16 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use crate::geometry::common::*;
 use crate::geometry::trajectory;
 use crate::geometry::trajectory::Trajectory;
-use crate::geometry::vector::{Vector2, Vector4};
+use crate::geometry::vector::*;
 
 pub type Point2 = Point<Vector2>;
+pub type Point3 = Point<Vector3>;
+
+pub const ZERO: Point3 = Point3 {
+    position: Vector3 { x: 0., y: 0., z: 0. },
+    speed: Vector3 { x: 0., y: 0., z: 0. },
+    trajectory: trajectory::ZERO,
+};
 
 #[derive(Copy, Clone)]
 pub struct Point<T> {
@@ -22,17 +29,23 @@ impl From<Vector2> for Point2 {
     }
 }
 
+impl From<Vector3> for Point3 {
+    fn from(vector: Vector3) -> Self {
+        Point::new(vector, Vector3::zeros())
+    }
+}
+
 impl From<Vector4> for Point2 {
     fn from(vector: Vector4) -> Self {
         Point::new(vector.upper(), vector.lower())
     }
 }
 
-pub const ZERO: Point2 = Point2 {
-    position: Vector2 { x: 0., y: 0. },
-    speed: Vector2 { x: 0., y: 0. },
-    trajectory: trajectory::ZERO,
-};
+impl From<Vector6> for Point3 {
+    fn from(vector: Vector6) -> Self {
+        Point3::new(vector.upper(), vector.lower())
+    }
+}
 
 impl<T> Point<T> where
     T: Copy + Clone + AddAssign<T> + SubAssign<T> {
@@ -126,6 +139,24 @@ impl Array<[f64; 4]> for Point2 {
     }
 }
 
+impl Array<[f64; 6]> for Point3 {
+    #[inline]
+    fn array(&self) -> [f64; 6] {
+        [self.position.x, self.position.y, self.position.z, self.speed.x, self.speed.y, self.speed.z]
+    }
+
+    #[inline]
+    fn set_array(&mut self, array: &[f64; 6]) -> &mut Self {
+        self.position.x = array[0];
+        self.position.y = array[1];
+        self.position.z = array[2];
+        self.speed.x = array[3];
+        self.speed.y = array[4];
+        self.speed.z = array[5];
+        self
+    }
+}
+
 impl Vector<Vector4> for Point2 {
     #[inline]
     fn vector(&self) -> Vector4 {
@@ -138,6 +169,24 @@ impl Vector<Vector4> for Point2 {
         self.position.y = vector.y;
         self.speed.x = vector.z;
         self.speed.y = vector.w;
+        self
+    }
+}
+
+impl Vector<Vector6> for Point3 {
+    #[inline]
+    fn vector(&self) -> Vector6 {
+        Vector6::concat(&self.position, &self.speed)
+    }
+
+    #[inline]
+    fn set_vector(&mut self, vector: &Vector6) -> &mut Self {
+        self.position.x = vector.x;
+        self.position.y = vector.y;
+        self.position.z = vector.z;
+        self.speed.x = vector.u;
+        self.speed.y = vector.v;
+        self.speed.z = vector.w;
         self
     }
 }
@@ -189,7 +238,7 @@ impl<T> PartialEq for Point<T> where
 }
 
 impl<T> Add<T> for Point<T> where
-    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: AddAssign<T> + Copy + Clone + SubAssign<T> {
     type Output = Point<T>;
 
     #[inline]
@@ -201,7 +250,7 @@ impl<T> Add<T> for Point<T> where
 }
 
 impl<T> Add<Point<T>> for Point<T> where
-    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: AddAssign<T> + Copy + Clone + SubAssign<T> {
     type Output = Point<T>;
 
     #[inline]
@@ -223,8 +272,19 @@ impl Add<Vector4> for Point2 {
     }
 }
 
+impl Add<Vector6> for Point3 {
+    type Output = Point3;
+
+    #[inline]
+    fn add(self, rhs: Vector6) -> Self::Output {
+        let mut ret = self;
+        ret += rhs;
+        ret
+    }
+}
+
 impl<T> AddAssign<T> for Point<T> where
-    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: AddAssign<T> + Copy + Clone + SubAssign<T> {
     #[inline]
     fn add_assign(&mut self, rhs: T) {
         self.position += rhs;
@@ -232,7 +292,7 @@ impl<T> AddAssign<T> for Point<T> where
 }
 
 impl<T> AddAssign<Point<T>> for Point<T> where
-    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: AddAssign<T> + Copy + Clone + SubAssign<T> {
     #[inline]
     fn add_assign(&mut self, rhs: Point<T>) {
         self.position += rhs.position;
@@ -250,8 +310,20 @@ impl AddAssign<Vector4> for Point2 {
     }
 }
 
+impl AddAssign<Vector6> for Point3 {
+    #[inline]
+    fn add_assign(&mut self, rhs: Vector6) {
+        self.position.x += rhs.x;
+        self.position.y += rhs.y;
+        self.position.z += rhs.z;
+        self.speed.x += rhs.u;
+        self.speed.y += rhs.v;
+        self.speed.z += rhs.w;
+    }
+}
+
 impl<T> Sub<T> for Point<T> where
-    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> {
     type Output = Point<T>;
 
     #[inline]
@@ -263,7 +335,7 @@ impl<T> Sub<T> for Point<T> where
 }
 
 impl<T> Sub<Point<T>> for Point<T> where
-    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> {
     type Output = Point<T>;
 
     #[inline]
@@ -285,8 +357,19 @@ impl Sub<Vector4> for Point2 {
     }
 }
 
+impl Sub<Vector6> for Point3 {
+    type Output = Point3;
+
+    #[inline]
+    fn sub(self, rhs: Vector6) -> Self::Output {
+        let mut ret = self;
+        ret -= rhs;
+        ret
+    }
+}
+
 impl<T> SubAssign<T> for Point<T> where
-    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> {
     #[inline]
     fn sub_assign(&mut self, rhs: T) {
         self.position -= rhs;
@@ -294,7 +377,7 @@ impl<T> SubAssign<T> for Point<T> where
 }
 
 impl<T> SubAssign<Point<T>> for Point<T> where
-    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> {
     #[inline]
     fn sub_assign(&mut self, rhs: Point<T>) {
         self.position -= rhs.position;
@@ -309,6 +392,18 @@ impl SubAssign<Vector4> for Point2 {
         self.position.y -= rhs.y;
         self.speed.x -= rhs.z;
         self.speed.y -= rhs.w;
+    }
+}
+
+impl SubAssign<Vector6> for Point3 {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Vector6) {
+        self.position.x -= rhs.x;
+        self.position.y -= rhs.y;
+        self.position.z -= rhs.z;
+        self.speed.x -= rhs.u;
+        self.speed.y -= rhs.v;
+        self.speed.z -= rhs.w;
     }
 }
 

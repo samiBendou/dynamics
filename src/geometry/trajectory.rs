@@ -3,13 +3,16 @@ use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::geometry::common::{Initializer, Reset};
-use crate::geometry::vector::Vector2;
+use crate::geometry::vector::{Vector2, Vector3};
 
 pub type Trajectory2 = Trajectory<Vector2>;
+pub type Trajectory3 = Trajectory<Vector3>;
 
 pub const TRAJECTORY_SIZE: usize = 256;
-pub const ZERO: Trajectory2 = Trajectory2 { positions: [Vector2 { x: 0., y: 0. }; TRAJECTORY_SIZE], index: 0 };
-
+pub const ZERO: Trajectory3 = Trajectory3 {
+    positions: [Vector3 { x: 0., y: 0., z: 0. }; TRAJECTORY_SIZE],
+    index: 0,
+};
 
 #[derive(Copy, Clone)]
 pub struct Trajectory<T> {
