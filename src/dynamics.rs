@@ -62,11 +62,11 @@ impl Debug for Body {
 
 pub struct Cluster {
     pub bodies: Vec<Body>,
+    pub solver: Solver,
     barycenter: Point2,
     origin: geometry::point::Point2,
     current: usize,
     frame: Frame,
-    solver: Solver,
 }
 
 impl Cluster {
