@@ -119,38 +119,48 @@ impl Cluster {
         Cluster::orbital(cluster, true_anomalies)
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.bodies.len() == 0
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.bodies.len()
     }
 
+    #[inline]
     pub fn barycenter(&self) -> &Point2 {
         &self.barycenter
     }
 
+    #[inline]
     pub fn current(&self) -> Option<&Body> {
         self.bodies.get(self.current)
     }
 
+    #[inline]
     pub fn current_mut(&mut self) -> Option<&mut Body> {
         self.bodies.get_mut(self.current)
     }
 
+    #[inline]
     pub fn current_index(&self) -> usize {
         self.current
     }
 
+    #[inline]
     pub fn last(&self) -> Option<&Body> { self.bodies.last() }
 
+    #[inline]
     pub fn last_mut(&mut self) -> Option<&mut Body> { self.bodies.last_mut() }
 
+    #[inline]
     pub fn kinetic_energy(&self) -> f64 {
         self.bodies.iter().map(|body| body.center.kinetic_energy()).sum()
     }
 
+    #[inline]
     pub fn angular_momentum(&self) -> f64 {
         self.bodies.iter().map(|body| body.center.angular_momentum()).sum()
     }
@@ -216,6 +226,7 @@ impl Cluster {
         self
     }
 
+    #[inline]
     fn update_origin(&mut self) -> &mut Self {
         self.origin.position = self.current_origin().position;
         self.origin.speed = self.current_origin().speed;
@@ -298,31 +309,34 @@ impl Cluster {
         self
     }
 
+    #[inline]
     pub fn update_frame(&mut self) -> &mut Self {
         self.frame.next();
         let origin = *self.current_origin();
         self.reset_origin(origin).update_barycenter()
     }
 
+    #[inline]
     pub fn reset0_current(&mut self) -> &mut Self {
         self.bodies[self.current].center.state.reset0();
         self.bodies[self.current].center.state.trajectory.reset0();
         self.update_barycenter()
     }
 
+    #[inline]
     pub fn reset_current_trajectory(&mut self) -> &mut Self {
         let position = self.bodies[self.current].center.state.position;
         self.bodies[self.current].center.state.trajectory.reset(&position);
         self.update_barycenter()
     }
 
-
+    #[inline]
     pub fn update_current_trajectory(&mut self) -> &mut Self {
         self.bodies[self.current].center.state.update_trajectory();
         self
     }
 
-
+    #[inline]
     pub fn translate_current(&mut self, direction: &Vector2) -> &mut Self {
         self.bodies[self.current].center.state.position += *direction;
         self.update_barycenter()
@@ -335,6 +349,7 @@ impl Cluster {
         self.update_barycenter()
     }
 
+    #[inline]
     pub fn apply<T>(&mut self, dt: f64, iterations: u32, f: T) -> &mut Self where
         T: FnMut(&Vec<Body>, usize) -> Vector4 {
         self.set_absolute();
@@ -411,12 +426,14 @@ impl Debug for Cluster {
 impl Index<usize> for Cluster {
     type Output = Body;
 
+    #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         &self.bodies[index]
     }
 }
 
 impl IndexMut<usize> for Cluster {
+    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.bodies[index]
     }

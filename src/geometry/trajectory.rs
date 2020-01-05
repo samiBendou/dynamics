@@ -28,10 +28,12 @@ impl From<[Vector2; TRAJECTORY_SIZE]> for Trajectory2 {
 }
 
 impl Trajectory2 {
+    #[inline]
     pub fn new(positions: [Vector2; TRAJECTORY_SIZE], index: usize) -> Trajectory2 {
         Trajectory2 { positions, index }
     }
 
+    #[inline]
     pub fn zeros() -> Trajectory2 {
         let position = Vector2::zeros();
         Trajectory2::new([position; TRAJECTORY_SIZE], 0)
@@ -58,23 +60,23 @@ impl Trajectory2 {
         self
     }
 
-
+    #[inline]
     pub fn push(&mut self, position: &Vector2) {
         self.positions[self.index] = *position;
         self.index = self.index_offset(0);
     }
 
-
+    #[inline]
     pub fn position(&self, i: usize) -> &Vector2 {
         &self.positions[self.index_offset(i)]
     }
 
-
+    #[inline]
     pub fn position_mut(&mut self, i: usize) -> &mut Vector2 {
         &mut self.positions[self.index_offset(i)]
     }
 
-
+    #[inline]
     fn index_offset(&self, i: usize) -> usize {
         (i + self.index + 1) % TRAJECTORY_SIZE
     }
@@ -93,6 +95,7 @@ impl Debug for Trajectory2 {
 impl Add<Trajectory2> for Trajectory2 {
     type Output = Trajectory2;
 
+    #[inline]
     fn add(self, rhs: Trajectory2) -> Self::Output {
         let mut ret = self;
         ret += rhs;
@@ -103,6 +106,7 @@ impl Add<Trajectory2> for Trajectory2 {
 impl Add<Vector2> for Trajectory2 {
     type Output = Trajectory2;
 
+    #[inline]
     fn add(self, rhs: Vector2) -> Self::Output {
         let mut ret = self;
         ret += rhs;
@@ -129,6 +133,7 @@ impl AddAssign<Vector2> for Trajectory2 {
 impl Sub<Trajectory2> for Trajectory2 {
     type Output = Trajectory2;
 
+    #[inline]
     fn sub(self, rhs: Trajectory2) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
@@ -139,6 +144,7 @@ impl Sub<Trajectory2> for Trajectory2 {
 impl Sub<Vector2> for Trajectory2 {
     type Output = Trajectory2;
 
+    #[inline]
     fn sub(self, rhs: Vector2) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
@@ -165,6 +171,7 @@ impl SubAssign<Vector2> for Trajectory2 {
 impl Mul<f64> for Trajectory2 {
     type Output = Trajectory2;
 
+    #[inline]
     fn mul(self, rhs: f64) -> Self::Output {
         let mut ret = self;
         ret *= rhs;
@@ -183,6 +190,7 @@ impl MulAssign<f64> for Trajectory2 {
 impl Div<f64> for Trajectory2 {
     type Output = Trajectory2;
 
+    #[inline]
     fn div(self, rhs: f64) -> Self::Output {
         let mut ret = self;
         ret /= rhs;

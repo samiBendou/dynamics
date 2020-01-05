@@ -38,6 +38,7 @@ pub const ZERO: Point2 = Point2 {
 
 impl Point2 {
     //noinspection RsTypeCheck
+    #[inline]
     pub fn new(position: Vector2, speed: Vector2) -> Point2 {
         Point2 {
             position,
@@ -46,37 +47,44 @@ impl Point2 {
         }
     }
 
+    #[inline]
     pub fn zeros() -> Point2 {
         Point2::new(Vector2::zeros(), Vector2::zeros())
     }
 
+    #[inline]
     pub fn reset0(&mut self) -> &mut Self {
         self.position.reset0();
         self.speed.reset0();
         self
     }
 
+    #[inline]
     pub fn reset1(&mut self) -> &mut Self {
         self.position.reset1();
         self.speed.reset1();
         self
     }
 
+    #[inline]
     pub fn reset(&mut self, position: &Vector2, speed: &Vector2) -> &mut Self {
         self.position = *position;
         self.speed = *speed;
         self
     }
 
+    #[inline]
     pub fn distance(&self, position: &Vector2) -> f64 {
         self.position.distance(*position)
     }
 
+    #[inline]
     pub fn update_trajectory(&mut self) -> &mut Self {
         self.trajectory.push(&self.position);
         self
     }
 
+    #[inline]
     pub fn update_origin(&mut self, origin: &Point2, old_origin: &Point2) -> &mut Self {
         *self += *old_origin;
         *self -= *origin;
@@ -98,10 +106,12 @@ impl Debug for Point2 {
 }
 
 impl Array<[f64; 4]> for Point2 {
+    #[inline]
     fn array(&self) -> [f64; 4] {
         [self.position.x, self.position.y, self.speed.x, self.speed.y]
     }
 
+    #[inline]
     fn set_array(&mut self, array: &[f64; 4]) -> &mut Self {
         self.position.x = array[0];
         self.position.y = array[1];
@@ -112,10 +122,12 @@ impl Array<[f64; 4]> for Point2 {
 }
 
 impl Vector<Vector4> for Point2 {
+    #[inline]
     fn vector(&self) -> Vector4 {
         Vector4::concat(&self.position, &self.speed)
     }
 
+    #[inline]
     fn set_vector(&mut self, vector: &Vector4) -> &mut Self {
         self.position.x = vector.x;
         self.position.y = vector.y;
@@ -126,10 +138,12 @@ impl Vector<Vector4> for Point2 {
 }
 
 impl PartialEq for Point2 {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.position == other.position && self.speed == other.speed
     }
 
+    #[inline]
     fn ne(&self, other: &Self) -> bool {
         self.position != other.position || self.speed != other.speed
     }
@@ -138,6 +152,7 @@ impl PartialEq for Point2 {
 impl Add<Vector2> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn add(self, rhs: Vector2) -> Self::Output {
         let mut ret = self;
         ret += rhs;
@@ -148,6 +163,7 @@ impl Add<Vector2> for Point2 {
 impl Add<Point2> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn add(self, rhs: Point2) -> Self::Output {
         let mut ret = self;
         ret += rhs;
@@ -158,6 +174,7 @@ impl Add<Point2> for Point2 {
 impl Add<Vector4> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn add(self, rhs: Vector4) -> Self::Output {
         let mut ret = self;
         ret += rhs;
@@ -166,12 +183,14 @@ impl Add<Vector4> for Point2 {
 }
 
 impl AddAssign<Vector2> for Point2 {
+    #[inline]
     fn add_assign(&mut self, rhs: Vector2) {
         self.position += rhs;
     }
 }
 
 impl AddAssign<Point2> for Point2 {
+    #[inline]
     fn add_assign(&mut self, rhs: Point2) {
         self.position += rhs.position;
         self.speed += rhs.speed;
@@ -179,6 +198,7 @@ impl AddAssign<Point2> for Point2 {
 }
 
 impl AddAssign<Vector4> for Point2 {
+    #[inline]
     fn add_assign(&mut self, rhs: Vector4) {
         self.position.x += rhs.x;
         self.position.y += rhs.y;
@@ -190,6 +210,7 @@ impl AddAssign<Vector4> for Point2 {
 impl Sub<Vector2> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn sub(self, rhs: Vector2) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
@@ -200,6 +221,7 @@ impl Sub<Vector2> for Point2 {
 impl Sub<Point2> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn sub(self, rhs: Point2) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
@@ -210,6 +232,7 @@ impl Sub<Point2> for Point2 {
 impl Sub<Vector4> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn sub(self, rhs: Vector4) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
@@ -218,12 +241,14 @@ impl Sub<Vector4> for Point2 {
 }
 
 impl SubAssign<Vector2> for Point2 {
+    #[inline]
     fn sub_assign(&mut self, rhs: Vector2) {
         self.position -= rhs;
     }
 }
 
 impl SubAssign<Point2> for Point2 {
+    #[inline]
     fn sub_assign(&mut self, rhs: Point2) {
         self.position -= rhs.position;
         self.speed -= rhs.speed;
@@ -231,6 +256,7 @@ impl SubAssign<Point2> for Point2 {
 }
 
 impl SubAssign<Vector4> for Point2 {
+    #[inline]
     fn sub_assign(&mut self, rhs: Vector4) {
         self.position.x -= rhs.x;
         self.position.y -= rhs.y;
@@ -242,6 +268,7 @@ impl SubAssign<Vector4> for Point2 {
 impl Mul<f64> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn mul(self, rhs: f64) -> Self::Output {
         let mut output = self;
         output *= rhs;
@@ -250,6 +277,7 @@ impl Mul<f64> for Point2 {
 }
 
 impl MulAssign<f64> for Point2 {
+    #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         self.position *= rhs;
         self.speed *= rhs;
@@ -259,6 +287,7 @@ impl MulAssign<f64> for Point2 {
 impl Div<f64> for Point2 {
     type Output = Point2;
 
+    #[inline]
     fn div(self, rhs: f64) -> Self::Output {
         let mut output = self;
         output /= rhs;
@@ -267,6 +296,7 @@ impl Div<f64> for Point2 {
 }
 
 impl DivAssign<f64> for Point2 {
+    #[inline]
     fn div_assign(&mut self, rhs: f64) {
         self.position /= rhs;
         self.speed /= rhs;

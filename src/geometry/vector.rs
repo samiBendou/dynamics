@@ -213,6 +213,7 @@ macro_rules! impl_vector {
         impl BitOr<$VectorN> for $VectorN {
             type Output = f64;
 
+            #[inline]
             fn bitor(self, rhs: $VectorN) -> Self::Output {
                 self.dot(&rhs)
             }
@@ -221,6 +222,7 @@ macro_rules! impl_vector {
         impl Not for $VectorN {
             type Output = f64;
 
+            #[inline]
             fn not(self) -> Self::Output {
                 self.magnitude()
             }
@@ -229,16 +231,20 @@ macro_rules! impl_vector {
         impl Rem<$VectorN> for $VectorN {
             type Output = f64;
 
+            #[inline]
             fn rem(self, rhs: Self) -> Self::Output {
                 self.distance(rhs)
             }
         }
 
         impl PartialEq for $VectorN {
+
+            #[inline]
             fn eq(&self, other: &Self) -> bool {
                 self.distance2(*other) < std::f64::MIN_POSITIVE
             }
 
+            #[inline]
             fn ne(&self, other: &Self) -> bool {
                 self.distance2(*other) >= std::f64::MIN_POSITIVE
             }
