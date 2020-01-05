@@ -34,7 +34,6 @@ impl Solver {
 
     pub fn step<T>(&mut self, bodies: &mut Vec<Body>, mut f: T, iterations: u32) -> &mut Self where
         T: FnMut(&Vec<Body>, usize) -> Vector4 {
-        let len = bodies.len();
         self.tmp = bodies.iter().map(|_body| [Vector4::zeros(); 4]).collect();
         self.state = bodies.iter().map(|_body| Vector4::zeros()).collect();
 
@@ -43,21 +42,22 @@ impl Solver {
                 Method::EulerExplicit => self.euler_explicit(bodies, &mut f),
                 Method::RungeKutta4 => self.runge_kutta_4(bodies, &mut f),
             };
-            for j in 0..bodies.len() {
-                bodies[j].center.accelerate(self.dt);
+            for body in bodies.iter_mut() {
+                body.center.accelerate(self.dt);
             }
         }
         self
     }
 
-    pub fn euler_explicit<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
+    fn euler_explicit<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
         T: FnMut(&Vec<Body>, usize) -> Vector4 {
         for j in 0..bodies.len() {
             bodies[j].center.gradient = f(bodies, j);
         }
         self
     }
-    pub fn runge_kutta_4<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
+
+    fn runge_kutta_4<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
         T: FnMut(&Vec<Body>, usize) -> Vector4 {
         let half_dt = 0.5 * self.dt;
         for j in 0..bodies.len() {
@@ -68,7 +68,6 @@ impl Solver {
             self.state[j] = bodies[j].center.state.vector();
             bodies[j].center.state.set_vector(&(self.state[j] + self.tmp[j][0] * half_dt));
         }
-
         for j in 0..bodies.len() {
             self.tmp[j][1] = f(bodies, j);
         }
