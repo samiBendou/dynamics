@@ -345,10 +345,11 @@ impl Cluster {
     }
 
     pub fn translate(&mut self, direction: &Vector2) -> &mut Self {
+        self.barycenter.state.position += *direction;
         for body in self.bodies.iter_mut() {
             body.center.state.position += *direction;
         }
-        self.update_barycenter()
+        self
     }
 
     #[inline]
