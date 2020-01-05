@@ -39,6 +39,7 @@ impl Trajectory2 {
         Trajectory2::new([position; TRAJECTORY_SIZE], 0)
     }
 
+    #[inline]
     pub fn reset0(&mut self) -> &mut Self {
         for position in self.positions.iter_mut() {
             position.reset0();
@@ -46,6 +47,7 @@ impl Trajectory2 {
         self
     }
 
+    #[inline]
     pub fn reset1(&mut self) -> &mut Self {
         for position in self.positions.iter_mut() {
             position.reset0();
@@ -53,6 +55,7 @@ impl Trajectory2 {
         self
     }
 
+    #[inline]
     pub fn reset(&mut self, position: &Vector2) -> &mut Self {
         for pos in self.positions.iter_mut() {
             *pos = *position;
@@ -115,6 +118,7 @@ impl Add<Vector2> for Trajectory2 {
 }
 
 impl AddAssign<Trajectory2> for Trajectory2 {
+    #[inline]
     fn add_assign(&mut self, rhs: Trajectory2) {
         for i in 0..TRAJECTORY_SIZE {
             self.positions[self.index_offset(i)] += rhs.positions[rhs.index_offset(i)];
@@ -123,6 +127,7 @@ impl AddAssign<Trajectory2> for Trajectory2 {
 }
 
 impl AddAssign<Vector2> for Trajectory2 {
+    #[inline]
     fn add_assign(&mut self, rhs: Vector2) {
         for i in 0..TRAJECTORY_SIZE {
             self.positions[i] += rhs;
@@ -153,6 +158,7 @@ impl Sub<Vector2> for Trajectory2 {
 }
 
 impl SubAssign<Trajectory2> for Trajectory2 {
+    #[inline]
     fn sub_assign(&mut self, rhs: Trajectory2) {
         for i in 0..TRAJECTORY_SIZE {
             self.positions[self.index_offset(i)] -= rhs.positions[rhs.index_offset(i)];
@@ -161,6 +167,7 @@ impl SubAssign<Trajectory2> for Trajectory2 {
 }
 
 impl SubAssign<Vector2> for Trajectory2 {
+    #[inline]
     fn sub_assign(&mut self, rhs: Vector2) {
         for i in 0..TRAJECTORY_SIZE {
             self.positions[i] -= rhs;
@@ -180,6 +187,7 @@ impl Mul<f64> for Trajectory2 {
 }
 
 impl MulAssign<f64> for Trajectory2 {
+    #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         for i in 0..TRAJECTORY_SIZE {
             self.positions[i] *= rhs;
@@ -199,6 +207,7 @@ impl Div<f64> for Trajectory2 {
 }
 
 impl DivAssign<f64> for Trajectory2 {
+    #[inline]
     fn div_assign(&mut self, rhs: f64) {
         for i in 0..TRAJECTORY_SIZE {
             self.positions[i] /= rhs;
