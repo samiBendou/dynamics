@@ -4,29 +4,27 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::geometry::common::*;
 use crate::geometry::trajectory;
-use crate::geometry::trajectory::Trajectory2;
+use crate::geometry::trajectory::Trajectory;
 use crate::geometry::vector::{Vector2, Vector4};
 
-pub trait State<T> {
-    fn set_state(&mut self, state: &T) -> &mut Self;
-}
+pub type Point2 = Point<Vector2>;
 
 #[derive(Copy, Clone)]
-pub struct Point2 {
-    pub position: Vector2,
-    pub speed: Vector2,
-    pub trajectory: Trajectory2,
+pub struct Point<T> {
+    pub position: T,
+    pub speed: T,
+    pub trajectory: Trajectory<T>,
 }
 
 impl From<Vector2> for Point2 {
     fn from(vector: Vector2) -> Self {
-        Point2::new(vector, Vector2::zeros())
+        Point::new(vector, Vector2::zeros())
     }
 }
 
 impl From<Vector4> for Point2 {
     fn from(vector: Vector4) -> Self {
-        Point2::new(vector.upper(), vector.lower())
+        Point::new(vector.upper(), vector.lower())
     }
 }
 
@@ -36,20 +34,16 @@ pub const ZERO: Point2 = Point2 {
     trajectory: trajectory::ZERO,
 };
 
-impl Point2 {
+impl<T> Point<T> where
+    T: Copy + Clone + AddAssign<T> + SubAssign<T> {
     //noinspection RsTypeCheck
     #[inline]
-    pub fn new(position: Vector2, speed: Vector2) -> Point2 {
-        Point2 {
+    pub fn new(position: T, speed: T) -> Point<T> {
+        Point {
             position,
             speed,
-            trajectory: Trajectory2::from(position.clone()),
+            trajectory: Trajectory::from(position),
         }
-    }
-
-    #[inline]
-    pub fn distance(&self, position: &Vector2) -> f64 {
-        self.position.distance(*position)
     }
 
     #[inline]
@@ -59,28 +53,32 @@ impl Point2 {
     }
 
     #[inline]
-    pub fn update_origin(&mut self, origin: &Point2, old_origin: &Point2) -> &mut Self {
-        *self += *old_origin;
-        *self -= *origin;
+    pub fn update_origin(&mut self, origin: &Self, old_origin: &Self) -> &mut Self {
+        self.position += old_origin.position;
+        self.position -= origin.position;
+        self.speed += old_origin.speed;
+        self.speed -= origin.speed;
         self.trajectory += old_origin.trajectory;
         self.trajectory -= origin.trajectory;
         self
     }
 }
 
-impl Initializer for Point2 {
+impl<T> Initializer for Point<T> where
+    T: Initializer + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
     fn zeros() -> Self {
-        Point2::new(Vector2::ones(), Vector2::ones())
+        Point::new(T::ones(), T::ones())
     }
 
     #[inline]
     fn ones() -> Self {
-        Point2::new(Vector2::ones(), Vector2::ones())
+        Point::new(T::ones(), T::ones())
     }
 }
 
-impl Reset<Vector4> for Point2 {
+impl<T> Reset<Point<T>> for Point<T> where
+    T: Reset<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     fn reset0(&mut self) -> &mut Self {
         self.position.reset0();
         self.speed.reset0();
@@ -93,14 +91,15 @@ impl Reset<Vector4> for Point2 {
         self
     }
 
-    fn reset(&mut self, val: &Vector4) -> &mut Self {
-        self.position = val.upper();
-        self.speed = val.lower();
+    fn reset(&mut self, val: &Point<T>) -> &mut Self {
+        self.position = val.position;
+        self.speed = val.speed;
         self
     }
 }
 
-impl Debug for Point2 {
+impl<T> Debug for Point<T> where
+    T: Debug + Copy + Clone + AddAssign<T> + SubAssign<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
@@ -143,7 +142,41 @@ impl Vector<Vector4> for Point2 {
     }
 }
 
-impl PartialEq for Point2 {
+impl<T> Metric for Point<T> where
+    T: Metric + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    #[inline]
+    fn dot(&self, other: &Self) -> f64 {
+        self.position.dot(&other.position)
+    }
+
+    #[inline]
+    fn distance2(&self, other: &Self) -> f64 {
+        self.position.distance2(&other.position)
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        self.position.distance(&other.position)
+    }
+
+    #[inline]
+    fn magnitude2(&self) -> f64 {
+        self.position.magnitude2()
+    }
+
+    #[inline]
+    fn magnitude(&self) -> f64 {
+        self.position.magnitude()
+    }
+
+    fn normalize(&mut self) -> &mut Self {
+        self.position.normalize();
+        self
+    }
+}
+
+impl<T> PartialEq for Point<T> where
+    T: PartialEq<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.position == other.position && self.speed == other.speed
@@ -155,22 +188,24 @@ impl PartialEq for Point2 {
     }
 }
 
-impl Add<Vector2> for Point2 {
-    type Output = Point2;
+impl<T> Add<T> for Point<T> where
+    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    type Output = Point<T>;
 
     #[inline]
-    fn add(self, rhs: Vector2) -> Self::Output {
+    fn add(self, rhs: T) -> Self::Output {
         let mut ret = self;
         ret += rhs;
         ret
     }
 }
 
-impl Add<Point2> for Point2 {
-    type Output = Point2;
+impl<T> Add<Point<T>> for Point<T> where
+    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    type Output = Point<T>;
 
     #[inline]
-    fn add(self, rhs: Point2) -> Self::Output {
+    fn add(self, rhs: Point<T>) -> Self::Output {
         let mut ret = self;
         ret += rhs;
         ret
@@ -188,16 +223,18 @@ impl Add<Vector4> for Point2 {
     }
 }
 
-impl AddAssign<Vector2> for Point2 {
+impl<T> AddAssign<T> for Point<T> where
+    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
-    fn add_assign(&mut self, rhs: Vector2) {
+    fn add_assign(&mut self, rhs: T) {
         self.position += rhs;
     }
 }
 
-impl AddAssign<Point2> for Point2 {
+impl<T> AddAssign<Point<T>> for Point<T> where
+    T: AddAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
-    fn add_assign(&mut self, rhs: Point2) {
+    fn add_assign(&mut self, rhs: Point<T>) {
         self.position += rhs.position;
         self.speed += rhs.speed;
     }
@@ -213,22 +250,24 @@ impl AddAssign<Vector4> for Point2 {
     }
 }
 
-impl Sub<Vector2> for Point2 {
-    type Output = Point2;
+impl<T> Sub<T> for Point<T> where
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    type Output = Point<T>;
 
     #[inline]
-    fn sub(self, rhs: Vector2) -> Self::Output {
+    fn sub(self, rhs: T) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
         ret
     }
 }
 
-impl Sub<Point2> for Point2 {
-    type Output = Point2;
+impl<T> Sub<Point<T>> for Point<T> where
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    type Output = Point<T>;
 
     #[inline]
-    fn sub(self, rhs: Point2) -> Self::Output {
+    fn sub(self, rhs: Point<T>) -> Self::Output {
         let mut ret = self;
         ret -= rhs;
         ret
@@ -246,16 +285,18 @@ impl Sub<Vector4> for Point2 {
     }
 }
 
-impl SubAssign<Vector2> for Point2 {
+impl<T> SubAssign<T> for Point<T> where
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
-    fn sub_assign(&mut self, rhs: Vector2) {
+    fn sub_assign(&mut self, rhs: T) {
         self.position -= rhs;
     }
 }
 
-impl SubAssign<Point2> for Point2 {
+impl<T> SubAssign<Point<T>> for Point<T> where
+    T: SubAssign<T> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
-    fn sub_assign(&mut self, rhs: Point2) {
+    fn sub_assign(&mut self, rhs: Point<T>) {
         self.position -= rhs.position;
         self.speed -= rhs.speed;
     }
@@ -271,8 +312,9 @@ impl SubAssign<Vector4> for Point2 {
     }
 }
 
-impl Mul<f64> for Point2 {
-    type Output = Point2;
+impl<T> Mul<f64> for Point<T> where
+    T: MulAssign<f64> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    type Output = Point<T>;
 
     #[inline]
     fn mul(self, rhs: f64) -> Self::Output {
@@ -282,7 +324,8 @@ impl Mul<f64> for Point2 {
     }
 }
 
-impl MulAssign<f64> for Point2 {
+impl<T> MulAssign<f64> for Point<T> where
+    T: MulAssign<f64> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         self.position *= rhs;
@@ -290,8 +333,9 @@ impl MulAssign<f64> for Point2 {
     }
 }
 
-impl Div<f64> for Point2 {
-    type Output = Point2;
+impl<T> Div<f64> for Point<T> where
+    T: DivAssign<f64> + Copy + Clone + AddAssign<T> + SubAssign<T> {
+    type Output = Point<T>;
 
     #[inline]
     fn div(self, rhs: f64) -> Self::Output {
@@ -301,7 +345,8 @@ impl Div<f64> for Point2 {
     }
 }
 
-impl DivAssign<f64> for Point2 {
+impl<T> DivAssign<f64> for Point<T> where
+    T: DivAssign<f64> + Copy + Clone + AddAssign<T> + SubAssign<T> {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
         self.position /= rhs;

@@ -10,7 +10,7 @@ use std::ops::{
     SubAssign,
 };
 
-use crate::geometry::common::{Angle, Array, Initializer, Reset, Split};
+use crate::geometry::common::{Angle, Array, Initializer, Metric, Reset, Split};
 use crate::geometry::point::Point2;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
@@ -112,66 +112,16 @@ impl From<Point2> for Vector4 {
 
 macro_rules! impl_vector {
     ($VectorN:ident { $($field:ident),+ }, $n: expr) => {
+        impl From<f64> for $VectorN {
+            fn from(s: f64) -> Self {
+                $VectorN { $($field: s),+ }
+            }
+        }
+
         impl $VectorN {
             #[inline]
             pub fn new($($field: f64),+) -> Self {
                 $VectorN { $($field: $field),+ }
-            }
-
-            pub fn barycenter(vectors: &Vec<$VectorN>, scalars: &Vec<f64>) -> $VectorN {
-                let mut barycenter = $VectorN::zeros();
-                let len = scalars.len();
-                for i in 0..len {
-                    barycenter += vectors[i] * scalars[i];
-                }
-                barycenter
-            }
-
-            #[inline]
-            pub fn scalar(s: f64) -> Self {
-                $VectorN { $($field: s),+ }
-            }
-
-            #[inline]
-            pub fn dot(&self, rhs: &Self) -> f64 {
-                let mut ret = 0.;
-                $(ret += self.$field * rhs.$field;)+
-                ret
-            }
-
-            #[inline]
-            pub fn magnitude2(&self) -> f64 {
-                let mut ret = 0.;
-                $(ret += self.$field * self.$field;)+
-                ret
-            }
-
-            #[inline]
-            pub fn magnitude(&self) -> f64 {
-                self.magnitude2().sqrt()
-            }
-
-            #[inline]
-            pub fn distance2(&self, rhs: Self) -> f64 {
-                let mut ret = 0.;
-                let mut distance;
-                $(
-                    distance = self.$field - rhs.$field;
-                    ret += distance * distance;
-                )+
-                ret
-            }
-
-            #[inline]
-            pub fn distance(&self, rhs: Self) -> f64 {
-                self.distance2(rhs).sqrt()
-            }
-
-            #[inline]
-            pub fn normalize(&mut self) -> &mut Self {
-                let magnitude = self.magnitude();
-                $(self.$field /= magnitude;)+
-                self
             }
         }
 
@@ -220,6 +170,51 @@ macro_rules! impl_vector {
             }
         }
 
+        impl Metric for $VectorN {
+
+            #[inline]
+            fn dot(&self, rhs: &Self) -> f64 {
+                let mut ret = 0.;
+                $(ret += self.$field * rhs.$field;)+
+                ret
+            }
+
+            #[inline]
+            fn magnitude2(&self) -> f64 {
+                let mut ret = 0.;
+                $(ret += self.$field * self.$field;)+
+                ret
+            }
+
+            #[inline]
+            fn magnitude(&self) -> f64 {
+                self.magnitude2().sqrt()
+            }
+
+            #[inline]
+            fn distance2(&self, rhs: &Self) -> f64 {
+                let mut ret = 0.;
+                let mut distance;
+                $(
+                    distance = self.$field - rhs.$field;
+                    ret += distance * distance;
+                )+
+                ret
+            }
+
+            #[inline]
+            fn distance(&self, rhs: &Self) -> f64 {
+                self.distance2(rhs).sqrt()
+            }
+
+            #[inline]
+            fn normalize(&mut self) -> &mut Self {
+                let magnitude = self.magnitude();
+                $(self.$field /= magnitude;)+
+                self
+            }
+        }
+
         impl BitOr<$VectorN> for $VectorN {
             type Output = f64;
 
@@ -243,7 +238,7 @@ macro_rules! impl_vector {
 
             #[inline]
             fn rem(self, rhs: Self) -> Self::Output {
-                self.distance(rhs)
+                self.distance(&rhs)
             }
         }
 
@@ -251,12 +246,12 @@ macro_rules! impl_vector {
 
             #[inline]
             fn eq(&self, other: &Self) -> bool {
-                self.distance2(*other) < std::f64::MIN_POSITIVE
+                self.distance2(other) < std::f64::MIN_POSITIVE
             }
 
             #[inline]
             fn ne(&self, other: &Self) -> bool {
-                self.distance2(*other) >= std::f64::MIN_POSITIVE
+                self.distance2(other) >= std::f64::MIN_POSITIVE
             }
         }
 
@@ -616,7 +611,7 @@ mod tests {
         fn distance() {
             let u = Vector3::new(1., 1., 0.);
             let v = Vector3::zeros();
-            assert_eq!(u.distance2(v), 2f64);
+            assert_eq!(u.distance2(&v), 2f64);
         }
 
         #[test]

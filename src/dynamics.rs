@@ -182,7 +182,7 @@ impl Cluster {
         let mut distance: f64;
         let len = self.bodies.len();
         for i in 0..len {
-            distance = self.bodies[i].center.state.distance(&self.barycenter.state.position);
+            distance = self.bodies[i].center.state.distance(&self.barycenter.state);
             if distance > max_distance {
                 max_distance = distance;
                 max_index = i;
@@ -201,7 +201,7 @@ impl Cluster {
             Some(index) => index,
         };
         for i in 0..len {
-            distances.push(self.bodies[i].center.state.distance(&self.barycenter.state.position));
+            distances.push(self.bodies[i].center.state.distance(&self.barycenter.state));
             if i == index {
                 continue;
             }

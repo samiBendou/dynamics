@@ -30,6 +30,15 @@ pub trait Split<T> {
     fn set_lower(&mut self, val: &T) -> &mut Self;
 }
 
+pub trait Metric {
+    fn dot(&self, other: &Self) -> f64;
+    fn distance2(&self, other: &Self) -> f64;
+    fn distance(&self, other: &Self) -> f64;
+    fn magnitude2(&self) -> f64;
+    fn magnitude(&self) -> f64;
+    fn normalize(&mut self) -> &mut Self;
+}
+
 pub trait Angle {
     fn cos(&self, _: &Self) -> f64;
     fn sin(&self, _: &Self) -> f64;
