@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::geometry::common::*;
 use crate::geometry::vector::coordinates::Polar;
-use crate::geometry::vector::Vector2;
+use crate::geometry::vector::Vector3;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
@@ -127,18 +127,18 @@ impl Orbit {
         ((1. + ec) / (1. + epsilon * epsilon + 2. * ec).sqrt()).min(1.0).acos()
     }
 
-    pub fn position_at(&self, true_anomaly: f64) -> Vector2 {
+    pub fn position_at(&self, true_anomaly: f64) -> Vector3 {
         let mag = self.radius_at(true_anomaly);
-        Vector2::polar(mag, true_anomaly + self.argument)
+        Vector3::from_polar(mag, true_anomaly + self.argument)
     }
 
-    pub fn speed_at(&self, true_anomaly: f64) -> Vector2 {
+    pub fn speed_at(&self, true_anomaly: f64) -> Vector3 {
         if self.is_degenerated() {
-            return Vector2::zeros();
+            return Vector3::zeros();
         }
         let ang = true_anomaly + std::f64::consts::FRAC_PI_2 - self.flight_angle_at(true_anomaly);
         let mag = (self.mu * (2. / self.radius_at(true_anomaly) - 1. / self.semi_major())).sqrt();
-        Vector2::polar(mag, ang + self.argument)
+        Vector3::from_polar(mag, ang + self.argument)
     }
 }
 

@@ -5,12 +5,12 @@ use std::ops::{Index, IndexMut};
 use rand::Rng;
 
 use crate::dynamics::orbital::Orbit;
-use crate::dynamics::point::Point2;
+use crate::dynamics::point::Point3;
 use crate::dynamics::solver::{Method, Solver};
 use crate::geometry;
 use crate::geometry::common::*;
 use crate::geometry::point::ZERO;
-use crate::geometry::vector::{Vector2, Vector4};
+use crate::geometry::vector::{Vector3, Vector6};
 
 pub mod point;
 pub mod forces;
@@ -40,18 +40,18 @@ impl Frame {
 
 pub struct Body {
     pub name: String,
-    pub center: Point2,
+    pub center: Point3,
 }
 
 impl Body {
-    pub fn new(name: &str, center: Point2) -> Body {
+    pub fn new(name: &str, center: Point3) -> Body {
         Body { name: String::from(name), center }
     }
 
     pub fn orbital(name: &str, orbit: &Orbit, true_anomaly: f64, mass: f64) -> Body {
         let position = orbit.position_at(true_anomaly);
         let speed = orbit.speed_at(true_anomaly);
-        Body::new(name, Point2::inertial(position, speed, mass))
+        Body::new(name, Point3::inertial(position, speed, mass))
     }
 }
 
@@ -64,8 +64,8 @@ impl Debug for Body {
 pub struct Cluster {
     pub bodies: Vec<Body>,
     pub solver: Solver,
-    barycenter: Point2,
-    origin: geometry::point::Point2,
+    barycenter: Point3,
+    origin: geometry::point::Point3,
     current: usize,
     frame: Frame,
 }
@@ -74,7 +74,7 @@ impl Cluster {
     pub fn new(bodies: Vec<Body>) -> Self {
         Cluster {
             bodies,
-            barycenter: Point2::zeros(0.),
+            barycenter: Point3::zeros(0.),
             origin: ZERO,
             current: 0,
             solver: Solver::new(1., Method::RungeKutta4),
@@ -131,7 +131,7 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn barycenter(&self) -> &Point2 {
+    pub fn barycenter(&self) -> &Point3 {
         &self.barycenter
     }
 
@@ -235,7 +235,7 @@ impl Cluster {
     }
 
     #[inline]
-    fn current_origin(&mut self) -> &geometry::point::Point2 {
+    fn current_origin(&mut self) -> &geometry::point::Point3 {
         if self.is_empty() {
             return &ZERO;
         }
@@ -246,7 +246,7 @@ impl Cluster {
         }
     }
 
-    pub fn reset_origin(&mut self, origin: geometry::point::Point2) -> &mut Self {
+    pub fn reset_origin(&mut self, origin: geometry::point::Point3) -> &mut Self {
         if self.is_empty() {
             return self;
         }
@@ -340,12 +340,12 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn translate_current(&mut self, direction: &Vector2) -> &mut Self {
+    pub fn translate_current(&mut self, direction: &Vector3) -> &mut Self {
         self.bodies[self.current].center.state.position += *direction;
         self.update_barycenter()
     }
 
-    pub fn translate(&mut self, direction: &Vector2) -> &mut Self {
+    pub fn translate(&mut self, direction: &Vector3) -> &mut Self {
         self.barycenter.state.position += *direction;
         for body in self.bodies.iter_mut() {
             body.center.state.position += *direction;
@@ -355,7 +355,7 @@ impl Cluster {
 
     #[inline]
     pub fn apply<T>(&mut self, dt: f64, iterations: u32, f: T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector4 {
+        T: FnMut(&Vec<Body>, usize) -> Vector6 {
         self.set_absolute();
         self.solver.dt = dt;
         self.solver.step(&mut self.bodies, f, iterations);

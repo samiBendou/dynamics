@@ -1,6 +1,6 @@
 use crate::dynamics::Body;
 use crate::geometry::common::*;
-use crate::geometry::vector::Vector4;
+use crate::geometry::vector::Vector6;
 
 const FRAC_1_6: f64 = 1. / 6.;
 
@@ -23,8 +23,8 @@ impl Method {
 pub struct Solver {
     pub dt: f64,
     pub method: Method,
-    state: Vec<Vector4>,
-    tmp: Vec<[Vector4; 4]>,
+    state: Vec<Vector6>,
+    tmp: Vec<[Vector6; 4]>,
 }
 
 impl Solver {
@@ -33,9 +33,9 @@ impl Solver {
     }
 
     pub fn step<T>(&mut self, bodies: &mut Vec<Body>, mut f: T, iterations: u32) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector4 {
-        self.tmp = bodies.iter().map(|_body| [Vector4::zeros(); 4]).collect();
-        self.state = bodies.iter().map(|_body| Vector4::zeros()).collect();
+        T: FnMut(&Vec<Body>, usize) -> Vector6 {
+        self.tmp = bodies.iter().map(|_body| [Vector6::zeros(); 4]).collect();
+        self.state = bodies.iter().map(|_body| Vector6::zeros()).collect();
 
         for _ in 0..iterations {
             match self.method {
@@ -50,7 +50,7 @@ impl Solver {
     }
 
     fn euler_explicit<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector4 {
+        T: FnMut(&Vec<Body>, usize) -> Vector6 {
         for j in 0..bodies.len() {
             bodies[j].center.gradient = f(bodies, j);
         }
@@ -58,7 +58,7 @@ impl Solver {
     }
 
     fn runge_kutta_4<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector4 {
+        T: FnMut(&Vec<Body>, usize) -> Vector6 {
         let half_dt = 0.5 * self.dt;
         for j in 0..bodies.len() {
             self.tmp[j][0] = f(bodies, j);

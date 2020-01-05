@@ -1,11 +1,10 @@
-use crate::dynamics::{Cluster, point::Point2};
+use crate::dynamics::{Cluster, point::Point3};
 use crate::units::consts::G_UNIV;
 
-pub fn gravity(point: &Point2, cluster: &Cluster) -> f64 {
-    let len = cluster.len();
+pub fn gravity(point: &Point3, cluster: &Cluster) -> f64 {
     let mut ret = 0.;
     let mut distance: f64;
-    for i in 0..len {
+    for i in 0..cluster.len() {
         distance = cluster[i].center.state.position % point.state.position;
         if distance < std::f64::EPSILON {
             continue;
