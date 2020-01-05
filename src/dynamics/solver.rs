@@ -88,7 +88,7 @@ impl Solver {
         }
         for j in 0..bodies.len() {
             bodies[j].center.gradient += self.tmp[j][3];
-            bodies[j].center.gradient /= FRAC_1_6;
+            bodies[j].center.gradient *= FRAC_1_6;
             bodies[j].center.state.set_vector(&self.state[j]);
         }
         self
