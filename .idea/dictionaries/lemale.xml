@@ -2,7 +2,9 @@
   <dictionary name="lemale">
     <words>
       <w>apoapsis</w>
+      <w>kutta</w>
       <w>periapsis</w>
+      <w>runge</w>
     </words>
   </dictionary>
 </component>

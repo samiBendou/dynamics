@@ -6,8 +6,8 @@ use rand::Rng;
 
 use crate::dynamics::orbital::Orbit;
 use crate::dynamics::point::Point2;
+use crate::dynamics::solver::{Method, Solver};
 use crate::geometry;
-use crate::geometry::common::Vector;
 use crate::geometry::point::ZERO;
 use crate::geometry::vector::{Vector2, Vector4};
 
@@ -15,6 +15,7 @@ pub mod point;
 pub mod forces;
 pub mod potentials;
 pub mod orbital;
+pub mod solver;
 
 pub const SPEED_SCALING_FACTOR: f64 = 5e-7;
 
@@ -65,6 +66,7 @@ pub struct Cluster {
     origin: geometry::point::Point2,
     current: usize,
     frame: Frame,
+    solver: Solver,
 }
 
 impl Cluster {
@@ -74,6 +76,7 @@ impl Cluster {
             barycenter: Point2::zeros(0.),
             origin: ZERO,
             current: 0,
+            solver: Solver::new(1., Method::RungeKutta4),
             frame: Frame::Zero,
         }
     }
@@ -332,33 +335,11 @@ impl Cluster {
         self.update_barycenter()
     }
 
-    pub fn apply<T>(&mut self, dt: f64, iterations: u32, mut f: T) -> &mut Self where
-        T: FnMut(&Cluster, usize) -> Vector4 {
-        let len = self.bodies.len();
-        let half_dt = 0.5 * dt;
-        let frac_1_6 = 1. / 6.;
-        let mut state;
-        let mut k1;
-        let mut k2;
-        let mut k3;
-        let mut k4;
-
+    pub fn apply<T>(&mut self, dt: f64, iterations: u32, f: T) -> &mut Self where
+        T: FnMut(&Vec<Body>, usize) -> Vector4 {
         self.set_absolute();
-        for _ in 0..iterations {
-            for i in 0..len {
-                k1 = f(self, i);
-                state = self.bodies[i].center.state.vector();
-                self.bodies[i].center.state.set_vector(&(state + k1 * half_dt));
-                k2 = f(self, i);
-                self.bodies[i].center.state.set_vector(&(state + k2 * half_dt));
-                k3 = f(self, i);
-                self.bodies[i].center.state.set_vector(&(state + k3 * dt));
-                k4 = f(self, i);
-                self.bodies[i].center.state.set_vector(&state);
-                self.bodies[i].center.gradient = (k1 + (k2 + k3) * 2. + k4) * frac_1_6;
-            }
-            self.accelerate(dt);
-        }
+        self.solver.dt = dt;
+        self.solver.step(&mut self.bodies, f, iterations);
         self.update_barycenter()
             .update_origin()
             .set_relative()
@@ -411,14 +392,6 @@ impl Cluster {
         let offset = if bypass_last { 2 } else { 1 };
         if self.current < self.bodies.len() - offset {
             self.current += 1;
-        }
-        self
-    }
-
-    fn accelerate(&mut self, dt: f64) -> &mut Self {
-        let len = self.bodies.len();
-        for i in 0..len {
-            self.bodies[i].center.accelerate(dt);
         }
         self
     }
