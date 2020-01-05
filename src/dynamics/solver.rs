@@ -1,5 +1,5 @@
 use crate::dynamics::Body;
-use crate::geometry::common::Vector;
+use crate::geometry::common::*;
 use crate::geometry::vector::Vector4;
 
 const FRAC_1_6: f64 = 1. / 6.;

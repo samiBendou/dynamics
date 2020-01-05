@@ -6,6 +6,7 @@ use std::path::Path;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::geometry::common::*;
 use crate::geometry::vector::coordinates::Polar;
 use crate::geometry::vector::Vector2;
 

@@ -8,6 +8,7 @@ use crate::dynamics::orbital::Orbit;
 use crate::dynamics::point::Point2;
 use crate::dynamics::solver::{Method, Solver};
 use crate::geometry;
+use crate::geometry::common::*;
 use crate::geometry::point::ZERO;
 use crate::geometry::vector::{Vector2, Vector4};
 

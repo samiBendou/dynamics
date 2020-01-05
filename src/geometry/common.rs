@@ -1,5 +1,16 @@
 use crate::geometry::vector::Vector3;
 
+pub trait Initializer {
+    fn zeros() -> Self;
+    fn ones() -> Self;
+}
+
+pub trait Reset<T> {
+    fn reset0(&mut self) -> &mut Self;
+    fn reset1(&mut self) -> &mut Self;
+    fn reset(&mut self, val: &T) -> &mut Self;
+}
+
 pub trait Array<T> {
     fn array(&self) -> T;
     fn set_array(&mut self, arr: &T) -> &mut Self;
@@ -15,8 +26,8 @@ pub trait Split<T> {
     fn concat(lhs: &T, rhs: &T) -> Self;
     fn upper(&self) -> T;
     fn lower(&self) -> T;
-    fn set_upper(&mut self, vector: &T) -> &mut Self;
-    fn set_lower(&mut self, vector: &T) -> &mut Self;
+    fn set_upper(&mut self, val: &T) -> &mut Self;
+    fn set_lower(&mut self, val: &T) -> &mut Self;
 }
 
 pub trait Angle {

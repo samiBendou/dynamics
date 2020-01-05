@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::geometry::common::{Array, Split, Vector};
+use crate::geometry::common::*;
 use crate::geometry::trajectory;
 use crate::geometry::trajectory::Trajectory2;
 use crate::geometry::vector::{Vector2, Vector4};
@@ -48,32 +48,6 @@ impl Point2 {
     }
 
     #[inline]
-    pub fn zeros() -> Point2 {
-        Point2::new(Vector2::zeros(), Vector2::zeros())
-    }
-
-    #[inline]
-    pub fn reset0(&mut self) -> &mut Self {
-        self.position.reset0();
-        self.speed.reset0();
-        self
-    }
-
-    #[inline]
-    pub fn reset1(&mut self) -> &mut Self {
-        self.position.reset1();
-        self.speed.reset1();
-        self
-    }
-
-    #[inline]
-    pub fn reset(&mut self, position: &Vector2, speed: &Vector2) -> &mut Self {
-        self.position = *position;
-        self.speed = *speed;
-        self
-    }
-
-    #[inline]
     pub fn distance(&self, position: &Vector2) -> f64 {
         self.position.distance(*position)
     }
@@ -90,6 +64,38 @@ impl Point2 {
         *self -= *origin;
         self.trajectory += old_origin.trajectory;
         self.trajectory -= origin.trajectory;
+        self
+    }
+}
+
+impl Initializer for Point2 {
+    #[inline]
+    fn zeros() -> Self {
+        Point2::new(Vector2::ones(), Vector2::ones())
+    }
+
+    #[inline]
+    fn ones() -> Self {
+        Point2::new(Vector2::ones(), Vector2::ones())
+    }
+}
+
+impl Reset<Vector4> for Point2 {
+    fn reset0(&mut self) -> &mut Self {
+        self.position.reset0();
+        self.speed.reset0();
+        self
+    }
+
+    fn reset1(&mut self) -> &mut Self {
+        self.position.reset1();
+        self.speed.reset1();
+        self
+    }
+
+    fn reset(&mut self, val: &Vector4) -> &mut Self {
+        self.position = val.upper();
+        self.speed = val.lower();
         self
     }
 }

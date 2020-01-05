@@ -1,4 +1,4 @@
-use crate::geometry::common::Angle;
+use crate::geometry::common::*;
 use crate::geometry::point;
 use crate::geometry::vector::{Vector2, Vector4};
 

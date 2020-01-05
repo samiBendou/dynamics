@@ -10,7 +10,7 @@ use std::ops::{
     SubAssign,
 };
 
-use crate::geometry::common::{Angle, Array, Split};
+use crate::geometry::common::{Angle, Array, Initializer, Reset, Split};
 use crate::geometry::point::Point2;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
@@ -118,16 +118,6 @@ macro_rules! impl_vector {
                 $VectorN { $($field: $field),+ }
             }
 
-            #[inline]
-            pub fn zeros() -> Self {
-                $VectorN { $($field: 0f64),+ }
-            }
-
-            #[inline]
-            pub fn ones() -> Self {
-                $VectorN { $($field: 1f64),+ }
-            }
-
             pub fn barycenter(vectors: &Vec<$VectorN>, scalars: &Vec<f64>) -> $VectorN {
                 let mut barycenter = $VectorN::zeros();
                 let len = scalars.len();
@@ -140,18 +130,6 @@ macro_rules! impl_vector {
             #[inline]
             pub fn scalar(s: f64) -> Self {
                 $VectorN { $($field: s),+ }
-            }
-
-            #[inline]
-            pub fn reset0(&mut self) -> &mut Self {
-                $(self.$field = 0.;)+
-                self
-            }
-
-            #[inline]
-            pub fn reset1(&mut self) -> &mut Self {
-                $(self.$field = 1.;)+
-                self
             }
 
             #[inline]
@@ -193,6 +171,38 @@ macro_rules! impl_vector {
             pub fn normalize(&mut self) -> &mut Self {
                 let magnitude = self.magnitude();
                 $(self.$field /= magnitude;)+
+                self
+            }
+        }
+
+        impl Initializer for $VectorN {
+            #[inline]
+            fn zeros() -> Self {
+                $VectorN { $($field: 0.),+ }
+            }
+
+            #[inline]
+            fn ones() -> Self {
+                $VectorN { $($field: 1.),+ }
+            }
+        }
+
+        impl Reset<f64> for $VectorN {
+            #[inline]
+            fn reset0(&mut self) -> &mut Self {
+                $(self.$field = 0.;)+
+                self
+            }
+
+            #[inline]
+            fn reset1(&mut self) -> &mut Self {
+                $(self.$field = 1.;)+
+                self
+            }
+
+            #[inline]
+            fn reset(&mut self, val: &f64) -> &mut Self {
+                $(self.$field = *val;)+
                 self
             }
         }
@@ -516,6 +526,8 @@ impl Split<Vector2> for Vector4 {
 #[cfg(test)]
 mod tests {
     mod vector2 {
+        use crate::geometry::common::*;
+
         use super::super::coordinates::*;
         use super::super::Vector2;
 
@@ -562,6 +574,7 @@ mod tests {
 
     mod vector3 {
         use crate::assert_near;
+        use crate::geometry::common::*;
 
         use super::super::Vector3;
 
