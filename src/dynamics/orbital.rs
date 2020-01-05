@@ -129,9 +129,11 @@ impl Orbit {
 
     pub fn position_at(&self, true_anomaly: f64) -> Vector3 {
         let pi_frac_2 = std::f64::consts::FRAC_PI_2;
+        let argument = self.inclination.argument * std::f64::consts::PI / 180.;
+        let value = self.inclination.value * std::f64::consts::PI / 180.;
         let mag = self.radius_at(true_anomaly);
-        // let theta = pi_frac_2 - self.inclination.value * (true_anomaly - self.inclination.argument) / pi_frac_2;
-        Vector3::from_spherical(mag, true_anomaly + self.argument, pi_frac_2)
+        let theta = pi_frac_2 - value * (true_anomaly - argument) / pi_frac_2;
+        Vector3::from_spherical(mag, true_anomaly + self.argument, theta)
     }
 
     pub fn speed_at(&self, true_anomaly: f64) -> Vector3 {
@@ -139,10 +141,12 @@ impl Orbit {
             return Vector3::zeros();
         }
         let pi_frac_2 = std::f64::consts::FRAC_PI_2;
+        let argument = self.inclination.argument * std::f64::consts::PI / 180.;
+        let value = self.inclination.value * std::f64::consts::PI / 180.;
         let mag = (self.mu * (2. / self.radius_at(true_anomaly) - 1. / self.semi_major())).sqrt();
         let phi = true_anomaly + std::f64::consts::FRAC_PI_2 - self.flight_angle_at(true_anomaly);
-        // let theta = pi_frac_2  - self.inclination.value * (1. - (true_anomaly - self.inclination.argument) / pi_frac_2);
-        Vector3::from_spherical(mag, phi + self.argument, pi_frac_2)
+        let theta = pi_frac_2 - value * (1. - (true_anomaly - argument) / pi_frac_2);
+        Vector3::from_spherical(mag, phi + self.argument, theta)
     }
 }
 
