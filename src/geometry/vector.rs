@@ -615,7 +615,7 @@ impl coordinates::Spherical for Vector3 {
 
     #[inline]
     fn set_theta(&mut self, theta: f64) -> &mut Self {
-        self.set_spherical(self.magnitude(), self.phi(), self.theta())
+        self.set_spherical(self.magnitude(), self.phi(), theta)
     }
 }
 

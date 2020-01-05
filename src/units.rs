@@ -3,7 +3,7 @@ use std::ops::{Div, DivAssign, Mul, MulAssign};
 
 use consts::*;
 
-use crate::geometry::vector::Vector2;
+use crate::geometry::vector::Vector3;
 
 pub mod prefix;
 pub mod suffix;
@@ -240,8 +240,8 @@ impl Serialize<f64> for Unit {
     }
 }
 
-impl Serialize<Vector2> for Unit {
-    fn string_of(&self, vector: &Vector2) -> String {
+impl Serialize<Vector3> for Unit {
+    fn string_of(&self, vector: &Vector3) -> String {
         format!("{:?} ({})", self.value_of(vector), self.label())
     }
 }
@@ -296,8 +296,8 @@ impl Serialize<f64> for Compound {
     }
 }
 
-impl Serialize<Vector2> for Compound {
-    fn string_of(&self, vector: &Vector2) -> String {
+impl Serialize<Vector3> for Compound {
+    fn string_of(&self, vector: &Vector3) -> String {
         format!("{:?} ({})", self.value_of(vector), self.label())
     }
 }
