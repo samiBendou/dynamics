@@ -113,17 +113,17 @@ impl From<Point2> for Vector4 {
 macro_rules! impl_vector {
     ($VectorN:ident { $($field:ident),+ }, $n: expr) => {
         impl $VectorN {
-
+            #[inline]
             pub fn new($($field: f64),+) -> Self {
                 $VectorN { $($field: $field),+ }
             }
 
-
+            #[inline]
             pub fn zeros() -> Self {
                 $VectorN { $($field: 0f64),+ }
             }
 
-
+            #[inline]
             pub fn ones() -> Self {
                 $VectorN { $($field: 1f64),+ }
             }
@@ -137,38 +137,43 @@ macro_rules! impl_vector {
                 barycenter
             }
 
-
+            #[inline]
             pub fn scalar(s: f64) -> Self {
                 $VectorN { $($field: s),+ }
             }
 
+            #[inline]
             pub fn reset0(&mut self) -> &mut Self {
                 $(self.$field = 0.;)+
                 self
             }
 
+            #[inline]
             pub fn reset1(&mut self) -> &mut Self {
                 $(self.$field = 1.;)+
                 self
             }
 
+            #[inline]
             pub fn dot(&self, rhs: &Self) -> f64 {
                 let mut ret = 0.;
                 $(ret += self.$field * rhs.$field;)+
                 ret
             }
 
+            #[inline]
             pub fn magnitude2(&self) -> f64 {
                 let mut ret = 0.;
                 $(ret += self.$field * self.$field;)+
                 ret
             }
 
-
+            #[inline]
             pub fn magnitude(&self) -> f64 {
                 self.magnitude2().sqrt()
             }
 
+            #[inline]
             pub fn distance2(&self, rhs: Self) -> f64 {
                 let mut ret = 0.;
                 let mut distance;
@@ -179,11 +184,12 @@ macro_rules! impl_vector {
                 ret
             }
 
-
+            #[inline]
             pub fn distance(&self, rhs: Self) -> f64 {
                 self.distance2(rhs).sqrt()
             }
 
+            #[inline]
             pub fn normalize(&mut self) -> &mut Self {
                 let magnitude = self.magnitude();
                 $(self.$field /= magnitude;)+
@@ -241,12 +247,15 @@ macro_rules! impl_vector {
         impl Add<$VectorN> for $VectorN {
             type Output = Self;
 
+            #[inline]
             fn add(self, rhs: Self) -> Self::Output {
                 $VectorN { $($field: self.$field + rhs.$field),+ }
             }
         }
 
         impl AddAssign<$VectorN> for $VectorN {
+
+            #[inline]
             fn add_assign(&mut self, rhs: $VectorN) {
                 $(self.$field += rhs.$field;)+
             }
@@ -255,12 +264,15 @@ macro_rules! impl_vector {
         impl Sub<$VectorN> for $VectorN {
             type Output = Self;
 
+            #[inline]
             fn sub(self, rhs: Self) -> Self::Output {
                 $VectorN { $($field: self.$field - rhs.$field),+ }
             }
         }
 
         impl SubAssign<$VectorN> for $VectorN {
+
+            #[inline]
             fn sub_assign(&mut self, rhs: $VectorN) {
                 $(self.$field -= rhs.$field;)+
             }
@@ -269,6 +281,7 @@ macro_rules! impl_vector {
         impl Neg for $VectorN {
             type Output = Self;
 
+            #[inline]
             fn neg(self) -> Self::Output {
                 $VectorN { $($field: -self.$field),+ }
             }
@@ -277,12 +290,15 @@ macro_rules! impl_vector {
         impl Mul<f64> for $VectorN {
             type Output = Self;
 
+            #[inline]
             fn mul(self, rhs: f64) -> Self::Output {
                 $VectorN { $($field: self.$field * rhs),+ }
             }
         }
 
         impl MulAssign<f64> for $VectorN {
+
+            #[inline]
             fn mul_assign(&mut self, rhs: f64) {
                 $(self.$field *= rhs;)+
             }
@@ -291,12 +307,15 @@ macro_rules! impl_vector {
         impl Div<f64> for $VectorN {
             type Output = Self;
 
+            #[inline]
             fn div(self, rhs: f64) -> Self::Output {
                 $VectorN { $($field: self.$field / rhs),+ }
             }
         }
 
         impl DivAssign<f64> for $VectorN {
+
+            #[inline]
             fn div_assign(&mut self, rhs: f64) {
                 $(self.$field /= rhs;)+
             }
@@ -310,23 +329,28 @@ impl_vector!(Vector4 {x, y, z, w}, 4);
 impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
 
 impl Angle for Vector2 {
+    #[inline]
     fn cos(&self, rhs: &Self) -> f64 {
         self.dot(rhs) / (self.magnitude() * rhs.magnitude())
     }
 
+    #[inline]
     fn sin(&self, rhs: &Self) -> f64 {
         self.area(rhs) / (self.magnitude() * rhs.magnitude())
     }
 
     //noinspection RsTypeCheck
+    #[inline]
     fn angle(&self, rhs: &Self) -> f64 {
         self.cos(rhs).acos()
     }
 
+    #[inline]
     fn area(&self, rhs: &Self) -> f64 {
         self.x * rhs.y - self.y * rhs.x
     }
 
+    #[inline]
     fn cross(&self, rhs: &Self) -> Vector3 {
         Vector3::new(0., 0., self.area(rhs))
     }
@@ -351,43 +375,51 @@ impl coordinates::Cartesian2 for Vector2 {
 }
 
 impl coordinates::Polar for Vector2 {
+    #[inline]
     fn polar(mag: f64, ang: f64) -> Self {
         Vector2 { x: mag * ang.cos(), y: mag * ang.sin() }
     }
 
+    #[inline]
     fn unit_rho(ang: f64) -> Self {
         Vector2 { x: ang.cos(), y: ang.sin() }
     }
 
+    #[inline]
     fn unit_phi(ang: f64) -> Self {
         Vector2 { x: -ang.sin(), y: ang.cos() }
     }
 
+    #[inline]
     fn rho(&self) -> f64 {
         self.magnitude()
     }
 
+    #[inline]
     fn phi(&self) -> f64 {
         (self.y).atan2(self.x)
     }
 }
 
 impl transforms::Cartesian2 for Vector2 {
+    #[inline]
     fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
         Vector2::new(self.x * scale + middle.x, middle.y - self.y * scale)
     }
 
-
+    #[inline]
     fn centered(&self, middle: &Vector2, scale: f64) -> Self {
         Vector2::new((self.x - middle.x) / scale, (middle.y - self.y) / scale)
     }
 
+    #[inline]
     fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
         self.x = self.x * scale + middle.x;
         self.y = middle.y - self.y * scale;
         self
     }
 
+    #[inline]
     fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
         self.x = (self.x - middle.x) / scale;
         self.y = (middle.y - self.y) / scale;
@@ -412,10 +444,12 @@ impl transforms::Cartesian2 for Vector2 {
 }
 
 impl Array<[f64; 2]> for Vector2 {
+    #[inline]
     fn array(&self) -> [f64; 2] {
         [self.x, self.y]
     }
 
+    #[inline]
     fn set_array(&mut self, array: &[f64; 2]) -> &mut Self {
         self.x = array[0];
         self.y = array[1];
@@ -424,10 +458,12 @@ impl Array<[f64; 2]> for Vector2 {
 }
 
 impl Array<[f64; 4]> for Vector4 {
+    #[inline]
     fn array(&self) -> [f64; 4] {
         [self.x, self.y, self.z, self.w]
     }
 
+    #[inline]
     fn set_array(&mut self, array: &[f64; 4]) -> &mut Self {
         self.x = array[0];
         self.y = array[1];
@@ -446,20 +482,24 @@ impl Split<Vector2> for Vector4 {
         Vector4::new(lhs.x, lhs.y, rhs.x, rhs.y)
     }
 
+    #[inline]
     fn upper(&self) -> Vector2 {
         Vector2::new(self.x, self.y)
     }
 
+    #[inline]
     fn lower(&self) -> Vector2 {
         Vector2::new(self.z, self.w)
     }
 
+    #[inline]
     fn set_upper(&mut self, vector: &Vector2) -> &mut Self {
         self.x = vector.x;
         self.y = vector.y;
         self
     }
 
+    #[inline]
     fn set_lower(&mut self, vector: &Vector2) -> &mut Self {
         self.z = vector.x;
         self.w = vector.y;
