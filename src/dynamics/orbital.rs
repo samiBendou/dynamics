@@ -7,7 +7,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::geometry::common::*;
-use crate::geometry::vector::coordinates::Polar;
+use crate::geometry::vector::coordinates::Spherical;
 use crate::geometry::vector::Vector3;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
@@ -128,17 +128,21 @@ impl Orbit {
     }
 
     pub fn position_at(&self, true_anomaly: f64) -> Vector3 {
+        let pi_frac_2 = std::f64::consts::FRAC_PI_2;
         let mag = self.radius_at(true_anomaly);
-        Vector3::from_polar(mag, true_anomaly + self.argument)
+        // let theta = pi_frac_2 - self.inclination.value * (true_anomaly - self.inclination.argument) / pi_frac_2;
+        Vector3::from_spherical(mag, true_anomaly + self.argument, pi_frac_2)
     }
 
     pub fn speed_at(&self, true_anomaly: f64) -> Vector3 {
         if self.is_degenerated() {
             return Vector3::zeros();
         }
-        let ang = true_anomaly + std::f64::consts::FRAC_PI_2 - self.flight_angle_at(true_anomaly);
+        let pi_frac_2 = std::f64::consts::FRAC_PI_2;
         let mag = (self.mu * (2. / self.radius_at(true_anomaly) - 1. / self.semi_major())).sqrt();
-        Vector3::from_polar(mag, ang + self.argument)
+        let phi = true_anomaly + std::f64::consts::FRAC_PI_2 - self.flight_angle_at(true_anomaly);
+        // let theta = pi_frac_2  - self.inclination.value * (1. - (true_anomaly - self.inclination.argument) / pi_frac_2);
+        Vector3::from_spherical(mag, phi + self.argument, pi_frac_2)
     }
 }
 
