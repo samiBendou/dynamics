@@ -817,57 +817,11 @@ impl Split<Vector3> for Vector6 {
 
 #[cfg(test)]
 mod tests {
-    mod vector2 {
-        use crate::geometry::common::*;
-
-        use super::super::coordinates::*;
-        use super::super::Vector2;
-
-        #[test]
-        fn norm_vector() {
-            let u = Vector2::new(-4., 0.);
-
-            assert_eq!(!u, 4.);
-            assert_eq!(u % u, 0.);
-        }
-
-        #[test]
-        fn polar_coordinates() {
-            let u = Vector2::ones();
-
-            assert_eq!(u.rho(), std::f64::consts::SQRT_2);
-            assert_eq!(u.phi(), std::f64::consts::FRAC_PI_4);
-        }
-
-        #[test]
-        fn partial_eq_vector() {
-            let u = Vector2::new(-4., 0.);
-            let v = Vector2::new(-2., 0.);
-
-            assert_eq!(u, u);
-            assert_ne!(u, v);
-        }
-
-        #[test]
-        fn arithmetic_vector() {
-            let mut u = Vector2::new(-4., 1.);
-            let v = Vector2::new(3., 2.);
-
-            assert_eq!(u + v, Vector2::new(-1., 3.));
-            assert_eq!(u - v, Vector2::new(-7., -1.));
-            assert_eq!(u + v, Vector2::new(-1., 3.));
-            assert_eq!(u * 2., Vector2::new(-8., 2.));
-            assert_eq!(u / 4., Vector2::new(-1., 0.25));
-
-            u += v;
-            assert_eq!(u, Vector2::new(-1., 3.));
-        }
-    }
-
     mod vector3 {
         use crate::assert_near;
         use crate::geometry::common::*;
 
+        use super::super::coordinates::*;
         use super::super::Vector3;
 
         #[test]
@@ -880,9 +834,28 @@ mod tests {
 
         #[test]
         fn magnitude() {
+            let sqrt_2 = std::f64::consts::SQRT_2;
+            let zero = Vector3::zeros();
             let u = Vector3::new(1., 1., 0.);
-            assert_eq!(u.magnitude(), std::f64::consts::SQRT_2);
-            assert_eq!(u.magnitude2(), 2f64);
+            assert_eq!(u.magnitude2(), 2.);
+            assert_eq!(u.magnitude(), sqrt_2);
+            assert_eq!(u.distance2(&zero), 2.);
+            assert_eq!(u.distance(&zero), sqrt_2);
+        }
+
+        #[test]
+        fn partial_eq() {
+            let u = Vector3::new(-4., 0., 1.);
+            let v = Vector3::new(-2., 0., 1.);
+            assert_eq!(u, u);
+            assert_ne!(u, v);
+        }
+
+        #[test]
+        fn polar_coordinates() {
+            let u = Vector3::ones();
+            assert_eq!(u.rho(), std::f64::consts::SQRT_2);
+            assert_eq!(u.phi(), std::f64::consts::FRAC_PI_4);
         }
 
         #[test]

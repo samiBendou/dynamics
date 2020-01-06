@@ -115,3 +115,9 @@ impl Algebra<Matrix3> for Matrix3 {
         self
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    mod matrix3 {}
+}
