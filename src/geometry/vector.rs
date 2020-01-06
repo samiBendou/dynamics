@@ -11,6 +11,7 @@ use std::ops::{
 };
 
 use crate::geometry::common::{Angle, Array, Initializer, Metric, Reset, Split};
+use crate::geometry::matrix::Matrix3;
 use crate::geometry::point::Point2;
 use crate::geometry::vector::coordinates::Polar;
 
@@ -131,6 +132,7 @@ impl From<Point2> for Vector4 {
     }
 }
 
+#[macro_export]
 macro_rules! impl_vector {
     ($VectorN:ident { $($field:ident),+ }, $n: expr) => {
         impl From<f64> for $VectorN {
@@ -359,6 +361,15 @@ impl_vector!(Vector2 {x, y}, 2);
 impl_vector!(Vector3 {x, y, z}, 3);
 impl_vector!(Vector4 {x, y, z, w}, 4);
 impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
+
+
+impl MulAssign<Matrix3> for Vector3 {
+    fn mul_assign(&mut self, rhs: Matrix3) {
+        self.x = rhs.xx * self.x + rhs.xy * self.y + rhs.xz * self.z;
+        self.y = rhs.yx * self.x + rhs.yy * self.y + rhs.yz * self.z;
+        self.z = rhs.zx * self.x + rhs.zy * self.y + rhs.zz * self.z;
+    }
+}
 
 impl Angle for Vector2 {
     #[inline]
