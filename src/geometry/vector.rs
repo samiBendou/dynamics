@@ -365,9 +365,12 @@ impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
 
 impl MulAssign<Matrix3> for Vector3 {
     fn mul_assign(&mut self, rhs: Matrix3) {
-        self.x = rhs.xx * self.x + rhs.xy * self.y + rhs.xz * self.z;
-        self.y = rhs.yx * self.x + rhs.yy * self.y + rhs.yz * self.z;
-        self.z = rhs.zx * self.x + rhs.zy * self.y + rhs.zz * self.z;
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+        self.x = rhs.xx * x + rhs.xy * y + rhs.xz * z;
+        self.y = rhs.yx * x + rhs.yy * y + rhs.yz * z;
+        self.z = rhs.zx * x + rhs.zy * y + rhs.zz * z;
     }
 }
 

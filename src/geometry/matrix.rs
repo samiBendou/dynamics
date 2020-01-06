@@ -45,17 +45,36 @@ trait Algebra<T> {
     fn set_transposed(&mut self) -> &mut Self;
 }
 
+impl Mul<Matrix3> for Matrix3 {
+    type Output = Matrix3;
+
+    fn mul(self, rhs: Matrix3) -> Self::Output {
+        let mut ret = self;
+        ret *= rhs;
+        ret
+    }
+}
+
 impl MulAssign<Matrix3> for Matrix3 {
     fn mul_assign(&mut self, rhs: Matrix3) {
-        self.xx = rhs.xx * self.xx + rhs.yx * self.xy + rhs.zx * self.xz;
-        self.yx = rhs.xx * self.yx + rhs.yx * self.yy + rhs.zx * self.yz;
-        self.zx = rhs.xx * self.zx + rhs.yx * self.zy + rhs.zx * self.zz;
-        self.xy = rhs.xy * self.xx + rhs.yy * self.xy + rhs.zy * self.xz;
-        self.yy = rhs.xy * self.yx + rhs.yy * self.yy + rhs.zy * self.yz;
-        self.zy = rhs.xy * self.zx + rhs.yy * self.zy + rhs.zy * self.zz;
-        self.zx = rhs.xz * self.xx + rhs.yz * self.xy + rhs.zz * self.xz;
-        self.zy = rhs.xz * self.yx + rhs.yz * self.yy + rhs.zz * self.yz;
-        self.zz = rhs.xz * self.zx + rhs.yz * self.zy + rhs.zz * self.zz;
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+        self.xx = rhs.xx * xx + rhs.yx * xy + rhs.zx * xz;
+        self.yx = rhs.xx * yx + rhs.yx * yy + rhs.zx * yz;
+        self.zx = rhs.xx * zx + rhs.yx * zy + rhs.zx * zz;
+        self.xy = rhs.xy * xx + rhs.yy * xy + rhs.zy * xz;
+        self.yy = rhs.xy * yx + rhs.yy * yy + rhs.zy * yz;
+        self.zy = rhs.xy * zx + rhs.yy * zy + rhs.zy * zz;
+        self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz;
+        self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz;
+        self.zz = rhs.xz * zx + rhs.yz * zy + rhs.zz * zz;
     }
 }
 
@@ -119,5 +138,17 @@ impl Algebra<Matrix3> for Matrix3 {
 
 #[cfg(test)]
 mod tests {
-    mod matrix3 {}
+    mod matrix3 {
+        use crate::geometry::common::*;
+
+        use super::super::Matrix3;
+
+        #[test]
+        fn arithmetic() {
+            let a = Matrix3::new(2., 0., 0., 0., 2., 0., 0., 0., 2.);
+            let b = Matrix3::ones();
+            let c = a * b;
+            assert_eq!(c, b * 2.);
+        }
+    }
 }
