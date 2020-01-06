@@ -11,6 +11,8 @@ use std::ops::{
 };
 
 use crate::geometry::common::*;
+use crate::geometry::vector::transforms;
+use crate::geometry::vector::Vector3;
 use crate::impl_vector;
 
 #[derive(Copy, Clone)]
@@ -37,7 +39,8 @@ pub struct Matrix3 {
 impl_vector!(Matrix2 {xx, xy, yx, yy}, 4);
 impl_vector!(Matrix3 {xx, xy, xz, yx, yy, yz, zx, zy, zz}, 9);
 
-trait Algebra<T> {
+pub trait Algebra<T> {
+    fn eye() -> Self;
     fn determinant(&self) -> f64;
     fn inverse(&self) -> Self;
     fn transposed(&self) -> Self;
@@ -51,6 +54,16 @@ impl Mul<Matrix3> for Matrix3 {
     fn mul(self, rhs: Matrix3) -> Self::Output {
         let mut ret = self;
         ret *= rhs;
+        ret
+    }
+}
+
+impl Mul<Vector3> for Matrix3 {
+    type Output = Vector3;
+
+    fn mul(self, rhs: Vector3) -> Self::Output {
+        let mut ret = rhs;
+        ret *= self;
         ret
     }
 }
@@ -79,6 +92,10 @@ impl MulAssign<Matrix3> for Matrix3 {
 }
 
 impl Algebra<Matrix3> for Matrix3 {
+    fn eye() -> Self {
+        Matrix3::new(1., 0., 0., 0., 1., 0., 0., 0., 1.)
+    }
+
     fn determinant(&self) -> f64 {
         let dyx = self.zz * self.yy - self.zy * self.yz;
         let dyy = -self.zz * self.xy + self.zy * self.xz;
@@ -135,6 +152,78 @@ impl Algebra<Matrix3> for Matrix3 {
     }
 }
 
+impl transforms::Rotation3 for Matrix3 {
+    fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
+        unimplemented!()
+    }
+
+    fn rotation_x(&self, angle: f64) -> Self {
+        let mut ret = *self;
+        ret.set_rotation_x(angle);
+        ret
+    }
+
+    fn rotation_y(&self, angle: f64) -> Self {
+        let mut ret = *self;
+        ret.set_rotation_y(angle);
+        ret
+    }
+
+    fn rotation_z(&self, angle: f64) -> Self {
+        let mut ret = *self;
+        ret.set_rotation_z(angle);
+        ret
+    }
+
+    fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
+        unimplemented!()
+    }
+
+    fn set_rotation_x(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = angle.sin();
+        self.xx = 1.;
+        self.xy = 0.;
+        self.xz = 0.;
+        self.yx = 0.;
+        self.yy = c;
+        self.yz = -s;
+        self.zx = 0.;
+        self.zy = s;
+        self.zz = c;
+        self
+    }
+
+    fn set_rotation_y(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = angle.sin();
+        self.xx = c;
+        self.xy = 0.;
+        self.xz = s;
+        self.yx = 0.;
+        self.yy = 1.;
+        self.yz = 0.;
+        self.zx = -s;
+        self.zy = 0.;
+        self.zz = c;
+        self
+    }
+
+    fn set_rotation_z(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = angle.sin();
+        self.xx = c;
+        self.xy = -s;
+        self.xz = 0.;
+        self.yx = s;
+        self.yy = c;
+        self.yz = 0.;
+        self.zx = 0.;
+        self.zy = 0.;
+        self.zz = 1.;
+        self
+    }
+}
 
 #[cfg(test)]
 mod tests {

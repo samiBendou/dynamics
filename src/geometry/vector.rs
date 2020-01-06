@@ -10,7 +10,7 @@ use std::ops::{
     SubAssign,
 };
 
-use crate::geometry::common::{Angle, Array, Initializer, Metric, Reset, Split};
+use crate::geometry::common::*;
 use crate::geometry::matrix::Matrix3;
 use crate::geometry::point::Point2;
 use crate::geometry::vector::coordinates::Polar;
@@ -61,13 +61,24 @@ pub mod coordinates {
 }
 
 pub mod transforms {
-    use crate::geometry::vector::Vector2;
+    use crate::geometry::vector::{Vector2, Vector3};
 
     pub trait Cartesian2 {
         fn left_up(&self, middle: &Vector2, scale: f64) -> Self;
         fn centered(&self, middle: &Vector2, scale: f64) -> Self;
         fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
         fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
+    }
+
+    pub trait Rotation3 {
+        fn rotation(&self, angle: f64, axis: &Vector3) -> Self;
+        fn rotation_x(&self, angle: f64) -> Self;
+        fn rotation_y(&self, angle: f64) -> Self;
+        fn rotation_z(&self, angle: f64) -> Self;
+        fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self;
+        fn set_rotation_x(&mut self, angle: f64) -> &mut Self;
+        fn set_rotation_y(&mut self, angle: f64) -> &mut Self;
+        fn set_rotation_z(&mut self, angle: f64) -> &mut Self;
     }
 }
 
@@ -361,7 +372,6 @@ impl_vector!(Vector2 {x, y}, 2);
 impl_vector!(Vector3 {x, y, z}, 3);
 impl_vector!(Vector4 {x, y, z, w}, 4);
 impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
-
 
 impl MulAssign<Matrix3> for Vector3 {
     fn mul_assign(&mut self, rhs: Matrix3) {
@@ -681,6 +691,64 @@ impl transforms::Cartesian2 for Vector3 {
     fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
         self.x = (self.x - middle.x) / scale;
         self.y = (middle.y - self.y) / scale;
+        self
+    }
+}
+
+impl transforms::Rotation3 for Vector3 {
+    fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
+        unimplemented!()
+    }
+
+    fn rotation_x(&self, angle: f64) -> Self {
+        let mut ret = *self;
+        ret.set_rotation_x(angle);
+        ret
+    }
+
+    fn rotation_y(&self, angle: f64) -> Self {
+        let mut ret = *self;
+        ret.set_rotation_y(angle);
+        ret
+    }
+
+    fn rotation_z(&self, angle: f64) -> Self {
+        let mut ret = *self;
+        ret.set_rotation_z(angle);
+        ret
+    }
+
+    fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
+        unimplemented!()
+    }
+
+    fn set_rotation_x(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = angle.sin();
+        let y = self.y;
+        let z = self.z;
+        self.y = y * c - z * s;
+        self.z = y * s + z * c;
+        self
+    }
+
+    fn set_rotation_y(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = -angle.sin();
+        let x = self.x;
+        let z = self.z;
+        self.x = x * c + z * s;
+        self.z = x * s - z * c;
+        self
+    }
+
+    fn set_rotation_z(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = angle.sin();
+        let x = self.x;
+        let y = self.y;
+        self.x = x * c - y * s;
+        self.y = x * s + y * c;
         self
     }
 }
