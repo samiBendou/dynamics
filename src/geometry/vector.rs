@@ -662,12 +662,12 @@ impl transforms::Rotation3 for Vector3 {
 
     fn set_rotation_y(&mut self, angle: f64) -> &mut Self {
         let c = angle.cos();
-        let s = -angle.sin();
+        let s = angle.sin();
         let x = self.x;
         let z = self.z;
 
         self.x = x * c + z * s;
-        self.z = x * s - z * c;
+        self.z = z * c - x * s;
         self
     }
 
@@ -821,6 +821,7 @@ mod tests {
     mod vector3 {
         use crate::assert_near;
         use crate::geometry::common::*;
+        use crate::geometry::common::transforms::Rotation3;
 
         use super::super::coordinates::*;
         use super::super::Vector3;
@@ -897,6 +898,43 @@ mod tests {
 
             u += v;
             assert_eq!(u, Vector3::new(-1., 3., 0.));
+        }
+
+        #[test]
+        fn rotations_xyz() {
+            let angle = std::f64::consts::FRAC_PI_2;
+            let mut u = Vector3::unit_x();
+            let mut v = Vector3::unit_y();
+            let mut w = Vector3::unit_z();
+
+            u.set_rotation_z(angle);
+            assert_near!(u.distance2(&Vector3::unit_y()), 0., std::f64::EPSILON);
+
+            v.set_rotation_x(angle);
+            assert_near!(v.distance2(&Vector3::unit_z()), 0., std::f64::EPSILON);
+
+            w.set_rotation_y(angle);
+            assert_near!(w.distance2(&Vector3::unit_x()), 0., std::f64::EPSILON);
+        }
+
+        #[test]
+        fn rotations() {
+            let angle = std::f64::consts::FRAC_PI_2;
+            let mut u = Vector3::unit_x();
+            let mut v = Vector3::unit_y();
+            let mut w = Vector3::unit_z();
+
+            let mut axis = Vector3::unit_z();
+            u.set_rotation(angle, &axis);
+            assert_near!(u.distance2(&Vector3::unit_y()), 0., std::f64::EPSILON);
+
+            axis = Vector3::unit_x();
+            v.set_rotation(angle, &axis);
+            assert_near!(v.distance2(&Vector3::unit_z()), 0., std::f64::EPSILON);
+
+            axis = Vector3::unit_y();
+            w.set_rotation(angle, &axis);
+            assert_near!(w.distance2(&Vector3::unit_x()), 0., std::f64::EPSILON);
         }
     }
 }

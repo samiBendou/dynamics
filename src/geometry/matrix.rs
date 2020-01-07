@@ -75,14 +75,14 @@ pub trait Algebra<T> where
         ret.set_transposed();
         ret
     }
-    fn adjoint(&self) -> Self {
+    fn adjugate(&self) -> Self {
         let mut ret = *self;
-        ret.set_adjoint();
+        ret.set_adjugate();
         ret
     }
     fn set_inverse(&mut self) -> &mut Self;
     fn set_transposed(&mut self) -> &mut Self;
-    fn set_adjoint(&mut self) -> &mut Self;
+    fn set_adjugate(&mut self) -> &mut Self;
 }
 
 impl Mul<Matrix3> for Matrix3 {
@@ -264,7 +264,7 @@ impl Algebra<Matrix3> for Matrix3 {
         self
     }
 
-    fn set_adjoint(&mut self) -> &mut Self {
+    fn set_adjugate(&mut self) -> &mut Self {
         let xx = self.xx;
         let yx = self.yx;
         let zx = self.zx;
@@ -411,7 +411,7 @@ impl Algebra<Matrix4> for Matrix4 {
         self
     }
 
-    fn set_adjoint(&mut self) -> &mut Self {
+    fn set_adjugate(&mut self) -> &mut Self {
         let xx = self.xx;
         let yx = self.yx;
         let zx = self.zx;
@@ -485,6 +485,7 @@ impl transforms::Cartesian2 for Matrix4 {
 
 impl transforms::Rotation3 for Matrix3 {
     fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
+
         let c = angle.cos();
         let s = angle.sin();
         let k = 1. - c;
@@ -498,13 +499,13 @@ impl transforms::Rotation3 for Matrix3 {
         let k_uyz = k * uy * uz;
 
         self.xx = k * ux * ux + c;
-        self.xy = k_uxy + uz * s;
-        self.xz = k_uxz - uy * s;
-        self.yx = k_uxy - uz * s;
+        self.xy = k_uxy - uz * s;
+        self.xz = k_uxz + uy * s;
+        self.yx = k_uxy + uz * s;
         self.yy = k * uy * uy + c;
-        self.yz = k_uyz + ux * s;
-        self.zx = k_uxz + uy * s;
-        self.zy = k_uyz - ux * s;
+        self.yz = k_uyz - ux * s;
+        self.zx = k_uxz - uy * s;
+        self.zy = k_uyz + ux * s;
         self.zz = k * uz * uz + c;
         self
     }
@@ -562,6 +563,10 @@ impl transforms::Rotation3 for Matrix3 {
 mod tests {
     mod matrix3 {
         use crate::geometry::common::*;
+        use crate::geometry::common::coordinates::{Cartesian2, Cartesian3};
+        use crate::geometry::common::transforms::Rotation3;
+        use crate::geometry::matrix::Matrix4;
+        use crate::geometry::vector::Vector3;
 
         use super::super::Algebra;
         use super::super::Matrix3;
@@ -586,11 +591,36 @@ mod tests {
             assert_eq!(a.transposed(), Matrix3::new(1., 4., 7., 2., 5., 8., 3., 6., 9.));
         }
 
-
         #[test]
         fn inverse() {
             let a = Matrix3::eye() * 2.;
             assert_eq!(a.inverse(), Matrix3::eye() * 0.5);
+        }
+
+        #[test]
+        fn adjugate() {
+            let a = Matrix3::eye() * 2.;
+            assert_eq!(a.adjugate(), a.inverse() * a.determinant());
+        }
+
+        #[test]
+        fn rotations() {
+            let angle = std::f64::consts::FRAC_PI_8;
+            let rot_x = Matrix3::from_rotation_x(angle);
+            let rot_y = Matrix3::from_rotation_y(angle);
+            let rot_z = Matrix3::from_rotation_z(angle);
+
+            let mut axis = Vector3::unit_x();
+            let mut rot = Matrix3::from_rotation(angle, &axis);
+            assert_eq!(rot, rot_x);
+
+            axis = Vector3::unit_y();
+            rot = Matrix3::from_rotation(angle, &axis);
+            assert_eq!(rot, rot_y);
+
+            axis = Vector3::unit_z();
+            rot = Matrix3::from_rotation(angle, &axis);
+            assert_eq!(rot, rot_z);
         }
     }
 
@@ -602,10 +632,34 @@ mod tests {
 
         #[test]
         fn arithmetic() {
-            let a = Matrix4::new(2., 0., 0., 0., 0., 2., 0., 0., 0., 0., 2., 0., 0., 0., 0., 2.);
+            let a = Matrix4::eye() * 2.;
             let b = Matrix4::ones();
             let c = a * b;
             assert_eq!(c, b * 2.);
+        }
+
+        #[test]
+        fn determinant() {
+            let a = Matrix4::eye() * 2.;
+            assert_eq!(a.determinant(), 16.);
+        }
+
+        #[test]
+        fn transposed() {
+            let a = Matrix4::new(1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16.);
+            assert_eq!(a.transposed(), Matrix4::new(1., 5., 9., 13., 2., 6., 10., 14., 3., 7., 11., 15., 4., 8., 12., 16.));
+        }
+
+        #[test]
+        fn inverse() {
+            let a = Matrix4::eye() * 2.;
+            assert_eq!(a.inverse(), Matrix4::eye() * 0.5);
+        }
+
+        #[test]
+        fn adjugate() {
+            let a = Matrix4::eye() * 2.;
+            assert_eq!(a.adjugate(), a.inverse() * a.determinant());
         }
     }
 }
