@@ -11,7 +11,7 @@ use std::ops::{
 };
 
 use crate::geometry::common::*;
-use crate::geometry::vector::transforms;
+use crate::geometry::common::transforms;
 use crate::geometry::vector::Vector3;
 use crate::impl_vector;
 
@@ -141,7 +141,7 @@ impl Algebra<Matrix3> for Matrix3 {
     fn set_transposed(&mut self) -> &mut Self {
         let yx = self.yx;
         let zx = self.zx;
-        let yz = self.zy;
+        let yz = self.yz;
         self.yx = self.xy;
         self.xy = yx;
         self.zx = self.xz;
@@ -155,24 +155,6 @@ impl Algebra<Matrix3> for Matrix3 {
 impl transforms::Rotation3 for Matrix3 {
     fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
         unimplemented!()
-    }
-
-    fn rotation_x(&self, angle: f64) -> Self {
-        let mut ret = *self;
-        ret.set_rotation_x(angle);
-        ret
-    }
-
-    fn rotation_y(&self, angle: f64) -> Self {
-        let mut ret = *self;
-        ret.set_rotation_y(angle);
-        ret
-    }
-
-    fn rotation_z(&self, angle: f64) -> Self {
-        let mut ret = *self;
-        ret.set_rotation_z(angle);
-        ret
     }
 
     fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {

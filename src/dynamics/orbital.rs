@@ -7,7 +7,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::geometry::common::*;
-use crate::geometry::vector::coordinates::Spherical;
+use crate::geometry::common::coordinates::Spherical;
 use crate::geometry::vector::Vector3;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]

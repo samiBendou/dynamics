@@ -11,76 +11,15 @@ use std::ops::{
 };
 
 use crate::geometry::common::*;
+use crate::geometry::common::coordinates::Polar;
 use crate::geometry::matrix::Matrix3;
 use crate::geometry::point::Point2;
-use crate::geometry::vector::coordinates::Polar;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
 pub static N_EX: Vector2 = Vector2 { x: -1., y: 0. };
 pub static EY: Vector2 = Vector2 { x: 0., y: 1. };
 pub static N_EY: Vector2 = Vector2 { x: 0., y: -1. };
 pub static ZERO: Vector2 = Vector2 { x: 0., y: 0. };
-
-pub mod coordinates {
-    pub trait Cartesian2 {
-        fn unit_x() -> Self;
-        fn unit_neg_x() -> Self;
-        fn unit_y() -> Self;
-        fn unit_neg_y() -> Self;
-    }
-
-    pub trait Cartesian3 {
-        fn unit_z() -> Self;
-        fn unit_neg_z() -> Self;
-    }
-
-    pub trait Polar {
-        fn from_polar(rho: f64, phi: f64) -> Self;
-        fn set_polar(&mut self, rho: f64, phi: f64) -> &mut Self;
-        fn unit_rho(phi: f64) -> Self;
-        fn unit_phi(phi: f64) -> Self;
-        fn rho(&self) -> f64;
-        fn phi(&self) -> f64;
-        fn set_rho(&mut self, rho: f64) -> &mut Self;
-        fn set_phi(&mut self, phi: f64) -> &mut Self;
-    }
-
-    pub trait Cylindrical {
-        fn from_cylindrical(rho: f64, phi: f64, z: f64) -> Self;
-        fn set_cylindrical(&mut self, rho: f64, phi: f64, z: f64) -> &mut Self;
-    }
-
-    pub trait Spherical {
-        fn from_spherical(radius: f64, phi: f64, theta: f64) -> Self;
-        fn set_spherical(&mut self, radius: f64, phi: f64, theta: f64) -> &mut Self;
-        fn unit_radius(phi: f64, theta: f64) -> Self;
-        fn unit_theta(phi: f64, theta: f64) -> Self;
-        fn theta(&self) -> f64;
-        fn set_theta(&mut self, theta: f64) -> &mut Self;
-    }
-}
-
-pub mod transforms {
-    use crate::geometry::vector::{Vector2, Vector3};
-
-    pub trait Cartesian2 {
-        fn left_up(&self, middle: &Vector2, scale: f64) -> Self;
-        fn centered(&self, middle: &Vector2, scale: f64) -> Self;
-        fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
-        fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
-    }
-
-    pub trait Rotation3 {
-        fn rotation(&self, angle: f64, axis: &Vector3) -> Self;
-        fn rotation_x(&self, angle: f64) -> Self;
-        fn rotation_y(&self, angle: f64) -> Self;
-        fn rotation_z(&self, angle: f64) -> Self;
-        fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self;
-        fn set_rotation_x(&mut self, angle: f64) -> &mut Self;
-        fn set_rotation_y(&mut self, angle: f64) -> &mut Self;
-        fn set_rotation_z(&mut self, angle: f64) -> &mut Self;
-    }
-}
 
 #[derive(Copy, Clone)]
 pub struct Vector2 {
@@ -698,24 +637,6 @@ impl transforms::Cartesian2 for Vector3 {
 impl transforms::Rotation3 for Vector3 {
     fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
         unimplemented!()
-    }
-
-    fn rotation_x(&self, angle: f64) -> Self {
-        let mut ret = *self;
-        ret.set_rotation_x(angle);
-        ret
-    }
-
-    fn rotation_y(&self, angle: f64) -> Self {
-        let mut ret = *self;
-        ret.set_rotation_y(angle);
-        ret
-    }
-
-    fn rotation_z(&self, angle: f64) -> Self {
-        let mut ret = *self;
-        ret.set_rotation_z(angle);
-        ret
     }
 
     fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
