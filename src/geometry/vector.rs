@@ -450,6 +450,44 @@ impl coordinates::Cartesian3 for Vector3 {
     }
 }
 
+impl coordinates::Cartesian2 for Vector4 {
+    fn unit_x() -> Self {
+        Vector4 { x: 1., y: 0., z: 0., w: 0. }
+    }
+
+    fn unit_neg_x() -> Self {
+        Vector4 { x: -1., y: 0., z: 0., w: 0. }
+    }
+
+    fn unit_y() -> Self {
+        Vector4 { x: 0., y: 1., z: 0., w: 0. }
+    }
+
+    fn unit_neg_y() -> Self {
+        Vector4 { x: 0., y: -1., z: 0., w: 0. }
+    }
+}
+
+impl coordinates::Cartesian3 for Vector4 {
+    fn unit_z() -> Self {
+        Vector4 { x: 0., y: 0., z: 1., w: 0. }
+    }
+
+    fn unit_neg_z() -> Self {
+        Vector4 { x: 0., y: 0., z: -1., w: 0. }
+    }
+}
+
+impl coordinates::Cartesian4 for Vector4 {
+    fn unit_w() -> Self {
+        Vector4 { x: 0., y: 0., z: 0., w: 1. }
+    }
+
+    fn unit_neg_w() -> Self {
+        Vector4 { x: 0., y: 0., z: 0., w: -1. }
+    }
+}
+
 impl coordinates::Polar for Vector2 {
     #[inline]
     fn from_polar(rho: f64, phi: f64) -> Self {

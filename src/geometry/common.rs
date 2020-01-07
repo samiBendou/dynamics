@@ -61,6 +61,11 @@ pub mod coordinates {
         fn unit_neg_z() -> Self;
     }
 
+    pub trait Cartesian4 {
+        fn unit_w() -> Self;
+        fn unit_neg_w() -> Self;
+    }
+
     pub trait Polar {
         fn from_polar(rho: f64, phi: f64) -> Self;
         fn set_polar(&mut self, rho: f64, phi: f64) -> &mut Self;

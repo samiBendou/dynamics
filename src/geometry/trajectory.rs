@@ -3,10 +3,11 @@ use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::geometry::common::{Initializer, Reset};
-use crate::geometry::vector::{Vector2, Vector3};
+use crate::geometry::vector::{Vector2, Vector3, Vector4};
 
 pub type Trajectory2 = Trajectory<Vector2>;
 pub type Trajectory3 = Trajectory<Vector3>;
+pub type Trajectory4 = Trajectory<Vector4>;
 
 pub const TRAJECTORY_SIZE: usize = 256;
 pub const ZERO: Trajectory3 = Trajectory3 {
@@ -56,6 +57,14 @@ impl<T> Trajectory<T> where
     #[inline]
     pub fn position_mut(&mut self, i: usize) -> &mut T {
         &mut self.positions[self.index_offset(i)]
+    }
+
+    pub fn last(&self) -> &T {
+        &self.positions[self.index_offset(TRAJECTORY_SIZE - 2)]
+    }
+
+    pub fn last_mut(&mut self) -> &mut T {
+        &mut self.positions[self.index_offset(TRAJECTORY_SIZE - 2)]
     }
 
     #[inline]
