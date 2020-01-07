@@ -562,6 +562,29 @@ impl transforms::Rigid<Matrix3, Vector3> for Matrix4 {
     }
 }
 
+impl transforms::Similarity<Matrix3, Vector3> for Matrix4 {
+    fn set_similarity(&mut self, scale: f64, rotation: &Matrix3, vector: &Vector3) -> &mut Self {
+        self.xx = scale * rotation.xx;
+        self.xy = scale * rotation.xy;
+        self.xz = scale * rotation.xz;
+        self.xw = vector.x;
+        self.yx = scale * rotation.yx;
+        self.yy = scale * rotation.yy;
+        self.yz = scale * rotation.yz;
+        self.yw = vector.y;
+        self.zx = scale * rotation.zx;
+        self.zy = scale * rotation.zy;
+        self.zz = scale * rotation.zz;
+        self.zw = vector.z;
+        self.wx = 0.;
+        self.wy = 0.;
+        self.wz = 0.;
+        self.ww = 1.;
+
+        self
+    }
+}
+
 impl transforms::Rotation2 for Matrix2 {
     fn set_rotation(&mut self, angle: f64) -> &mut Self {
         let c = angle.cos();
@@ -720,9 +743,10 @@ mod tests {
     }
 
     mod matrix4 {
+        use crate::assert_near;
         use crate::geometry::common::*;
         use crate::geometry::common::coordinates::{Cartesian2, Homogeneous};
-        use crate::geometry::common::transforms::{Rigid, Rotation3, Translation};
+        use crate::geometry::common::transforms::{Rigid, Rotation3, Similarity, Translation};
         use crate::geometry::matrix::Matrix3;
         use crate::geometry::vector::Vector3;
 
@@ -779,6 +803,18 @@ mod tests {
             let u = unit_x.homogeneous();
             let moved = a * u;
             assert_eq!(Vector3::from_homogeneous(&moved), Vector3::new(1., 1., 0.));
+        }
+
+        #[test]
+        fn similarity() {
+            let angle = std::f64::consts::FRAC_PI_2;
+            let scale = 2.;
+            let unit_x = Vector3::unit_x();
+            let rotation_z = Matrix3::from_rotation_z(angle);
+            let a = Matrix4::from_similarity(scale, &rotation_z, &unit_x);
+            let u = unit_x.homogeneous();
+            let moved = a * u;
+            assert_near!(Vector3::from_homogeneous(&moved).distance2(&Vector3::new(1., 2., 0.)), 0.,  std::f64::EPSILON);
         }
     }
 }

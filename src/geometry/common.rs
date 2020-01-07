@@ -154,6 +154,21 @@ pub mod transforms {
         fn set_rigid(&mut self, rotation: &U, vector: &T) -> &mut Self;
     }
 
+    pub trait Similarity<U, T> where
+        Self: std::marker::Sized + Copy + Clone + Initializer {
+        fn from_similarity(scale: f64, rotation: &U, vector: &T) -> Self {
+            let mut ret = Self::zeros();
+            ret.set_similarity(scale, rotation, vector);
+            ret
+        }
+        fn similarity(&self, scale: f64, rotation: &U, vector: &T) -> Self {
+            let mut ret = *self;
+            ret.set_similarity(scale, rotation, vector);
+            ret
+        }
+        fn set_similarity(&mut self, scale: f64, rotation: &U, vector: &T) -> &mut Self;
+    }
+
     pub trait Rotation2 where
         Self: std::marker::Sized + Copy + Clone + Initializer {
         fn from_rotation(angle: f64) -> Self {
