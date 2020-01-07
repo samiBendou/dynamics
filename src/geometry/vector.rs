@@ -595,6 +595,26 @@ impl coordinates::Spherical for Vector3 {
     }
 }
 
+impl coordinates::Homogeneous<Vector3> for Vector2 {
+    fn from_homogeneous(vector: &Vector3) -> Self {
+        Vector2::new(vector.x / vector.z, vector.y / vector.z)
+    }
+
+    fn homogeneous(&self) -> Vector3 {
+        Vector3::new(self.x, self.y, 1.)
+    }
+}
+
+impl coordinates::Homogeneous<Vector4> for Vector3 {
+    fn from_homogeneous(vector: &Vector4) -> Self {
+        Vector3::new(vector.x / vector.w, vector.y / vector.w, vector.z / vector.w)
+    }
+
+    fn homogeneous(&self) -> Vector4 {
+        Vector4::new(self.x, self.y, self.z, 1.)
+    }
+}
+
 impl transforms::Cartesian2 for Vector2 {
     #[inline]
     fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
