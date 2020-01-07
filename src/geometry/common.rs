@@ -85,42 +85,47 @@ pub mod coordinates {
         fn theta(&self) -> f64;
         fn set_theta(&mut self, theta: f64) -> &mut Self;
     }
+
+    pub trait Homogeneous<T> {
+        fn from_homogeneous(vector: &T) -> Self;
+        fn homogeneous(&self) -> T;
+    }
 }
 
 pub mod transforms {
     use crate::geometry::common::Initializer;
     use crate::geometry::vector::{Vector2, Vector3};
 
-    pub trait Cartesian2 {
-        fn left_up(&self, middle: &Vector2, scale: f64) -> Self;
-        fn centered(&self, middle: &Vector2, scale: f64) -> Self;
+    pub trait Cartesian2 where
+        Self: std::marker::Sized + Copy + Clone + Initializer {
+        fn from_left_up(middle: &Vector2, scale: f64) -> Self {
+            let mut ret = Self::zeros();
+            ret.set_left_up(middle, scale);
+            ret
+        }
+        fn from_centered(middle: &Vector2, scale: f64) -> Self {
+            let mut ret = Self::zeros();
+            ret.set_centered(middle, scale);
+            ret
+        }
+
+        fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
+            let mut ret = *self;
+            ret.set_left_up(middle, scale);
+            ret
+        }
+        fn centered(&self, middle: &Vector2, scale: f64) -> Self {
+            let mut ret = *self;
+            ret.set_centered(middle, scale);
+            ret
+        }
         fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
+
         fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
     }
 
     pub trait Rotation3 where
         Self: std::marker::Sized + Copy + Clone + Initializer {
-        fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
-            let mut ret = *self;
-            ret.set_rotation(angle, axis);
-            ret
-        }
-        fn rotation_x(&self, angle: f64) -> Self {
-            let mut ret = *self;
-            ret.set_rotation_x(angle);
-            ret
-        }
-        fn rotation_y(&self, angle: f64) -> Self {
-            let mut ret = *self;
-            ret.set_rotation_y(angle);
-            ret
-        }
-        fn rotation_z(&self, angle: f64) -> Self {
-            let mut ret = *self;
-            ret.set_rotation_z(angle);
-            ret
-        }
-
         fn from_rotation(angle: f64, axis: &Vector3) -> Self {
             let mut ret = Self::zeros();
             ret.set_rotation(angle, axis);

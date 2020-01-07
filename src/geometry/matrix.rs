@@ -12,7 +12,7 @@ use std::ops::{
 
 use crate::geometry::common::*;
 use crate::geometry::common::transforms;
-use crate::geometry::vector::Vector3;
+use crate::geometry::vector::*;
 use crate::impl_vector;
 
 #[derive(Copy, Clone)]
@@ -36,16 +36,53 @@ pub struct Matrix3 {
     pub zz: f64,
 }
 
+#[derive(Copy, Clone)]
+pub struct Matrix4 {
+    pub xx: f64,
+    pub xy: f64,
+    pub xz: f64,
+    pub xw: f64,
+    pub yx: f64,
+    pub yy: f64,
+    pub yz: f64,
+    pub yw: f64,
+    pub zx: f64,
+    pub zy: f64,
+    pub zz: f64,
+    pub zw: f64,
+    pub wx: f64,
+    pub wy: f64,
+    pub wz: f64,
+    pub ww: f64,
+}
+
 impl_vector!(Matrix2 {xx, xy, yx, yy}, 4);
 impl_vector!(Matrix3 {xx, xy, xz, yx, yy, yz, zx, zy, zz}, 9);
+impl_vector!(Matrix4 {xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww}, 16);
 
-pub trait Algebra<T> {
+pub trait Algebra<T> where
+    Self: std::marker::Sized + Copy + Clone,
+    T: std::marker::Sized + Copy + Clone {
     fn eye() -> Self;
     fn determinant(&self) -> f64;
-    fn inverse(&self) -> Self;
-    fn transposed(&self) -> Self;
+    fn inverse(&self) -> Self {
+        let mut ret = *self;
+        ret.set_inverse();
+        ret
+    }
+    fn transposed(&self) -> Self {
+        let mut ret = *self;
+        ret.set_transposed();
+        ret
+    }
+    fn adjoint(&self) -> Self {
+        let mut ret = *self;
+        ret.set_adjoint();
+        ret
+    }
     fn set_inverse(&mut self) -> &mut Self;
     fn set_transposed(&mut self) -> &mut Self;
+    fn set_adjoint(&mut self) -> &mut Self;
 }
 
 impl Mul<Matrix3> for Matrix3 {
@@ -79,15 +116,79 @@ impl MulAssign<Matrix3> for Matrix3 {
         let xz = self.xz;
         let yz = self.yz;
         let zz = self.zz;
+
         self.xx = rhs.xx * xx + rhs.yx * xy + rhs.zx * xz;
         self.yx = rhs.xx * yx + rhs.yx * yy + rhs.zx * yz;
         self.zx = rhs.xx * zx + rhs.yx * zy + rhs.zx * zz;
+
         self.xy = rhs.xy * xx + rhs.yy * xy + rhs.zy * xz;
         self.yy = rhs.xy * yx + rhs.yy * yy + rhs.zy * yz;
         self.zy = rhs.xy * zx + rhs.yy * zy + rhs.zy * zz;
+
         self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz;
         self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz;
         self.zz = rhs.xz * zx + rhs.yz * zy + rhs.zz * zz;
+    }
+}
+
+impl Mul<Matrix4> for Matrix4 {
+    type Output = Matrix4;
+
+    fn mul(self, rhs: Matrix4) -> Self::Output {
+        let mut ret = self;
+        ret *= rhs;
+        ret
+    }
+}
+
+impl Mul<Vector4> for Matrix4 {
+    type Output = Vector4;
+
+    fn mul(self, rhs: Vector4) -> Self::Output {
+        let mut ret = rhs;
+        ret *= self;
+        ret
+    }
+}
+
+impl MulAssign<Matrix4> for Matrix4 {
+    fn mul_assign(&mut self, rhs: Matrix4) {
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let wx = self.wx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let wy = self.wy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+        let wz = self.wz;
+        let xw = self.xw;
+        let yw = self.yw;
+        let zw = self.zw;
+        let ww = self.ww;
+
+        self.xx = rhs.xx * xx + rhs.yx * xy + rhs.zx * xz + rhs.wx * xw;
+        self.yx = rhs.xx * yx + rhs.yx * yy + rhs.zx * yz + rhs.wx * yw;
+        self.zx = rhs.xx * zx + rhs.yx * zy + rhs.zx * zz + rhs.wx * zw;
+        self.wx = rhs.xx * wx + rhs.yx * wy + rhs.zx * wz + rhs.wx * ww;
+
+        self.xy = rhs.xy * xx + rhs.yy * xy + rhs.zy * xz + rhs.wy * xw;
+        self.yy = rhs.xy * yx + rhs.yy * yy + rhs.zy * yz + rhs.wy * yw;
+        self.zy = rhs.xy * zx + rhs.yy * zy + rhs.zy * zz + rhs.wy * zw;
+        self.wy = rhs.xy * wx + rhs.yy * wy + rhs.zy * wz + rhs.wy * ww;
+
+        self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz + rhs.wz * xw;
+        self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz + rhs.wz * yw;
+        self.zz = rhs.xz * zx + rhs.yz * zy + rhs.zz * zz + rhs.wz * zw;
+        self.wz = rhs.xz * wx + rhs.yz * wy + rhs.zz * wz + rhs.wz * ww;
+
+        self.xw = rhs.xw * xx + rhs.yw * xy + rhs.zw * xz + rhs.ww * xw;
+        self.yw = rhs.xw * yx + rhs.yw * yy + rhs.zw * yz + rhs.ww * yw;
+        self.zw = rhs.xw * zx + rhs.yw * zy + rhs.zw * zz + rhs.ww * zw;
+        self.ww = rhs.xw * wx + rhs.yw * wy + rhs.zw * wz + rhs.ww * ww;
     }
 }
 
@@ -97,29 +198,38 @@ impl Algebra<Matrix3> for Matrix3 {
     }
 
     fn determinant(&self) -> f64 {
-        let dyx = self.zz * self.yy - self.zy * self.yz;
-        let dyy = -self.zz * self.xy + self.zy * self.xz;
-        let dyz = self.yz * self.xy - self.yy * self.xz;
-        self.xx * dyx + self.yx * dyy + self.zx * dyz
-    }
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
 
-    fn inverse(&self) -> Self {
-        let mut ret = *self;
-        ret.set_inverse();
-        ret
-    }
+        let dyx = zz * yy - zy * yz;
+        let dyy = -zz * xy + zy * xz;
+        let dyz = yz * xy - yy * xz;
 
-    fn transposed(&self) -> Self {
-        let mut ret = *self;
-        ret.set_transposed();
-        ret
+        xx * dyx + yx * dyy + zx * dyz
     }
 
     fn set_inverse(&mut self) -> &mut Self {
-        let dyx = self.zz * self.yy - self.zy * self.yz;
-        let dyy = -self.zz * self.xy + self.zy * self.xz;
-        let dyz = self.yz * self.xy - self.yy * self.xz;
-        let mut det = self.xx * dyx + self.yx * dyy + self.zx * dyz;
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+
+        let dyx = zz * yy - zy * yz;
+        let dyy = -zz * xy + zy * xz;
+        let dyz = yz * xy - yy * xz;
+        let mut det = xx * dyx + yx * dyy + zx * dyz;
 
         if det.abs() < std::f64::EPSILON {
             return self;
@@ -127,14 +237,15 @@ impl Algebra<Matrix3> for Matrix3 {
 
         det = 1. / det;
         self.xx = dyx * det;
-        self.yx = (-self.zz * self.yx + self.zx * self.yz) * det;
-        self.zx = (self.zy * self.yx - self.zx * self.yy) * det;
+        self.yx = (-zz * yx + zx * yz) * det;
+        self.zx = (zy * yx - zx * yy) * det;
         self.xy = dyy * det;
-        self.yy = (self.zz * self.xx - self.zx * self.xz) * det;
-        self.zy = (-self.zy * self.xx + self.zx * self.xy) * det;
+        self.yy = (zz * xx - zx * xz) * det;
+        self.zy = (-zy * xx + zx * xy) * det;
         self.zx = dyz * det;
-        self.zy = (-self.yz * self.xx + self.yx * self.xz) * det;
-        self.zz = (self.yy * self.xx - self.yx * self.xy) * det;
+        self.zy = (-yz * xx + yx * xz) * det;
+        self.zz = (yy * xx - yx * xy) * det;
+
         self
     }
 
@@ -142,23 +253,260 @@ impl Algebra<Matrix3> for Matrix3 {
         let yx = self.yx;
         let zx = self.zx;
         let yz = self.yz;
+
         self.yx = self.xy;
         self.xy = yx;
         self.zx = self.xz;
         self.xz = zx;
         self.yz = self.zy;
         self.zy = yz;
+
+        self
+    }
+
+    fn set_adjoint(&mut self) -> &mut Self {
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+
+        self.xx = yy * zz - zy * yz;
+        self.yx = zx * yz - yx * zz;
+        self.zx = yx * zy - zx * yy;
+        self.xy = zy * xz - xy * zz;
+        self.yy = xx * zz - zx * xz;
+        self.zy = zx * xy - xx * zy;
+        self.xz = xy * yz - yy * xz;
+        self.yz = yx * xz - xx * yz;
+        self.zz = xx * yy - yx * xy;
+
+        self
+    }
+}
+
+impl Algebra<Matrix4> for Matrix4 {
+    fn eye() -> Self {
+        Matrix4::new(1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.)
+    }
+
+    fn determinant(&self) -> f64 {
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let wx = self.wx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let wy = self.wy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+        let wz = self.wz;
+        let xw = self.xw;
+        let yw = self.yw;
+        let zw = self.zw;
+        let ww = self.ww;
+
+        let d00 = xx * yy - yx * xy;
+        let d01 = xx * zy - zx * xy;
+        let d02 = xx * wy - wx * xy;
+        let d03 = yx * zy - zx * yy;
+        let d04 = yx * wy - wx * yy;
+        let d05 = zx * wy - wx * zy;
+        let d06 = xz * yw - yz * xw;
+        let d07 = xz * zw - zz * xw;
+        let d08 = xz * ww - wz * xw;
+        let d09 = yz * zw - zz * yw;
+        let d10 = yz * ww - wz * yw;
+        let d11 = zz * ww - wz * zw;
+
+        d00 * d11 - d01 * d10 + d02 * d09 + d03 * d08 - d04 * d07 + d05 * d06
+    }
+
+    fn set_inverse(&mut self) -> &mut Self {
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let wx = self.wx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let wy = self.wy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+        let wz = self.wz;
+        let xw = self.xw;
+        let yw = self.yw;
+        let zw = self.zw;
+        let ww = self.ww;
+
+        let d00 = xx * yy - yx * xy;
+        let d01 = xx * zy - zx * xy;
+        let d02 = xx * wy - wx * xy;
+        let d03 = yx * zy - zx * yy;
+        let d04 = yx * wy - wx * yy;
+        let d05 = zx * wy - wx * zy;
+        let d06 = xz * yw - yz * xw;
+        let d07 = xz * zw - zz * xw;
+        let d08 = xz * ww - wz * xw;
+        let d09 = yz * zw - zz * yw;
+        let d10 = yz * ww - wz * yw;
+        let d11 = zz * ww - wz * zw;
+
+        let mut det = d00 * d11 - d01 * d10 + d02 * d09 + d03 * d08 - d04 * d07 + d05 * d06;
+
+        if det.abs() < std::f64::EPSILON {
+            return self;
+        }
+
+        det = 1.0 / det;
+
+        self.xx = (yy * d11 - zy * d10 + wy * d09) * det;
+        self.yx = (zx * d10 - yx * d11 - wx * d09) * det;
+        self.zx = (yw * d05 - zw * d04 + ww * d03) * det;
+        self.wx = (zz * d04 - yz * d05 - wz * d03) * det;
+        self.xy = (zy * d08 - xy * d11 - wy * d07) * det;
+        self.yy = (xx * d11 - zx * d08 + wx * d07) * det;
+        self.zy = (zw * d02 - xw * d05 - ww * d01) * det;
+        self.wy = (xz * d05 - zz * d02 + wz * d01) * det;
+        self.xz = (xy * d10 - yy * d08 + wy * d06) * det;
+        self.yz = (yx * d08 - xx * d10 - wx * d06) * det;
+        self.zz = (xw * d04 - yw * d02 + ww * d00) * det;
+        self.wz = (yz * d02 - xz * d04 - wz * d00) * det;
+        self.xw = (yy * d07 - xy * d09 - zy * d06) * det;
+        self.yw = (xx * d09 - yx * d07 + zx * d06) * det;
+        self.zw = (yw * d01 - xw * d03 - zw * d00) * det;
+        self.ww = (xz * d03 - yz * d01 + zz * d00) * det;
+
+        self
+    }
+
+    fn set_transposed(&mut self) -> &mut Self {
+        let yx = self.yx;
+        let zx = self.zx;
+        let wx = self.wx;
+        let zy = self.zy;
+        let wy = self.wy;
+        let wz = self.wz;
+
+        self.yx = self.xy;
+        self.zx = self.xz;
+        self.wx = self.xw;
+        self.xy = yx;
+        self.zy = self.yz;
+        self.wy = self.yw;
+        self.xz = zx;
+        self.yz = zy;
+        self.wz = self.zw;
+        self.xw = wx;
+        self.yw = wy;
+        self.zw = wz;
+
+        self
+    }
+
+    fn set_adjoint(&mut self) -> &mut Self {
+        let xx = self.xx;
+        let yx = self.yx;
+        let zx = self.zx;
+        let wx = self.wx;
+        let xy = self.xy;
+        let yy = self.yy;
+        let zy = self.zy;
+        let wy = self.wy;
+        let xz = self.xz;
+        let yz = self.yz;
+        let zz = self.zz;
+        let wz = self.wz;
+        let xw = self.xw;
+        let yw = self.yw;
+        let zw = self.zw;
+        let ww = self.ww;
+
+        self.xx = yy * (zz * ww - wz * zw) - yz * (zy * ww - wy * zw) + yw * (zy * wz - wy * zz);
+        self.yx = -(yx * (zz * ww - wz * zw) - yz * (zx * ww - wx * zw) + yw * (zx * wz - wx * zz));
+        self.zx = yx * (zy * ww - wy * zw) - yy * (zx * ww - wx * zw) + yw * (zx * wy - wx * zy);
+        self.wx = -(yx * (zy * wz - wy * zz) - yy * (zx * wz - wx * zz) + yz * (zx * wy - wx * zy));
+        self.xy = -(xy * (zz * ww - wz * zw) - xz * (zy * ww - wy * zw) + xw * (zy * wz - wy * zz));
+        self.yy = xx * (zz * ww - wz * zw) - xz * (zx * ww - wx * zw) + xw * (zx * wz - wx * zz);
+        self.zy = -(xx * (zy * ww - wy * zw) - xy * (zx * ww - wx * zw) + xw * (zx * wy - wx * zy));
+        self.wy = xx * (zy * wz - wy * zz) - xy * (zx * wz - wx * zz) + xz * (zx * wy - wx * zy);
+        self.xz = xy * (yz * ww - wz * yw) - xz * (yy * ww - wy * yw) + xw * (yy * wz - wy * yz);
+        self.yz = -(xx * (yz * ww - wz * yw) - xz * (yx * ww - wx * yw) + xw * (yx * wz - wx * yz));
+        self.zz = xx * (yy * ww - wy * yw) - xy * (yx * ww - wx * yw) + xw * (yx * wy - wx * yy);
+        self.wz = -(xx * (yy * wz - wy * yz) - xy * (yx * wz - wx * yz) + xz * (yx * wy - wx * yy));
+        self.xw = -(xy * (yz * zw - zz * yw) - xz * (yy * zw - zy * yw) + xw * (yy * zz - zy * yz));
+        self.yw = xx * (yz * zw - zz * yw) - xz * (yx * zw - zx * yw) + xw * (yx * zz - zx * yz);
+        self.zw = -(xx * (yy * zw - zy * yw) - xy * (yx * zw - zx * yw) + xw * (yx * zy - zx * yy));
+        self.ww = xx * (yy * zz - zy * yz) - xy * (yx * zz - zx * yz) + xz * (yx * zy - zx * yy);
+
+        self
+    }
+}
+
+impl transforms::Cartesian2 for Matrix4 {
+    fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
+        self.xx = scale;
+        self.xy = 0.;
+        self.xz = 0.;
+        self.xw = 0.;
+        self.yx = 0.;
+        self.yy = scale;
+        self.yz = 0.;
+        self.yw = 0.;
+        self.zx = 0.;
+        self.zy = 0.;
+        self.zz = scale;
+        self.zz = scale;
+
+        self
+    }
+
+    fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
+        self.xx = 1. / scale;
+        self.xy = 0.;
+        self.xz = 0.;
+        self.yx = 0.;
+        self.yy = 1. / scale;
+        self.yz = 0.;
+        self.zx = 0.;
+        self.zy = 0.;
+        self.zz = 1. / scale;
+
         self
     }
 }
 
 impl transforms::Rotation3 for Matrix3 {
-    fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
-        unimplemented!()
-    }
-
     fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
-        unimplemented!()
+        let c = angle.cos();
+        let s = angle.sin();
+        let k = 1. - c;
+
+        let ux = axis.x;
+        let uy = axis.y;
+        let uz = axis.z;
+
+        let k_uxy = k * ux * uy;
+        let k_uxz = k * ux * uz;
+        let k_uyz = k * uy * uz;
+
+        self.xx = k * ux * ux + c;
+        self.xy = k_uxy + uz * s;
+        self.xz = k_uxz - uy * s;
+        self.yx = k_uxy - uz * s;
+        self.yy = k * uy * uy + c;
+        self.yz = k_uyz + ux * s;
+        self.zx = k_uxz + uy * s;
+        self.zy = k_uyz - ux * s;
+        self.zz = k * uz * uz + c;
+        self
     }
 
     fn set_rotation_x(&mut self, angle: f64) -> &mut Self {
@@ -173,6 +521,7 @@ impl transforms::Rotation3 for Matrix3 {
         self.zx = 0.;
         self.zy = s;
         self.zz = c;
+
         self
     }
 
@@ -188,6 +537,7 @@ impl transforms::Rotation3 for Matrix3 {
         self.zx = -s;
         self.zy = 0.;
         self.zz = c;
+
         self
     }
 
@@ -203,6 +553,7 @@ impl transforms::Rotation3 for Matrix3 {
         self.zx = 0.;
         self.zy = 0.;
         self.zz = 1.;
+
         self
     }
 }
@@ -212,12 +563,47 @@ mod tests {
     mod matrix3 {
         use crate::geometry::common::*;
 
+        use super::super::Algebra;
         use super::super::Matrix3;
 
         #[test]
         fn arithmetic() {
-            let a = Matrix3::new(2., 0., 0., 0., 2., 0., 0., 0., 2.);
+            let a = Matrix3::eye() * 2.;
             let b = Matrix3::ones();
+            let c = a * b;
+            assert_eq!(c, b * 2.);
+        }
+
+        #[test]
+        fn determinant() {
+            let a = Matrix3::eye() * 2.;
+            assert_eq!(a.determinant(), 8.);
+        }
+
+        #[test]
+        fn transposed() {
+            let a = Matrix3::new(1., 2., 3., 4., 5., 6., 7., 8., 9.);
+            assert_eq!(a.transposed(), Matrix3::new(1., 4., 7., 2., 5., 8., 3., 6., 9.));
+        }
+
+
+        #[test]
+        fn inverse() {
+            let a = Matrix3::eye() * 2.;
+            assert_eq!(a.inverse(), Matrix3::eye() * 0.5);
+        }
+    }
+
+    mod matrix4 {
+        use crate::geometry::common::*;
+
+        use super::super::Algebra;
+        use super::super::Matrix4;
+
+        #[test]
+        fn arithmetic() {
+            let a = Matrix4::new(2., 0., 0., 0., 0., 2., 0., 0., 0., 0., 2., 0., 0., 0., 0., 2.);
+            let b = Matrix4::ones();
             let c = a * b;
             assert_eq!(c, b * 2.);
         }

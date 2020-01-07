@@ -12,7 +12,7 @@ use std::ops::{
 
 use crate::geometry::common::*;
 use crate::geometry::common::coordinates::Polar;
-use crate::geometry::matrix::Matrix3;
+use crate::geometry::matrix::{Matrix3, Matrix4};
 use crate::geometry::point::Point2;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
@@ -323,6 +323,19 @@ impl MulAssign<Matrix3> for Vector3 {
     }
 }
 
+impl MulAssign<Matrix4> for Vector4 {
+    fn mul_assign(&mut self, rhs: Matrix4) {
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+        let w = self.w;
+        self.x = rhs.xx * x + rhs.xy * y + rhs.xz * z + rhs.xw * w;
+        self.y = rhs.yx * x + rhs.yy * y + rhs.yz * z + rhs.yw * w;
+        self.z = rhs.zx * x + rhs.zy * y + rhs.zz * z + rhs.zw * w;
+        self.w = rhs.wx * x + rhs.wy * y + rhs.wz * z + rhs.ww * w;
+    }
+}
+
 impl Angle for Vector2 {
     #[inline]
     fn cos(&self, rhs: &Self) -> f64 {
@@ -584,16 +597,6 @@ impl coordinates::Spherical for Vector3 {
 
 impl transforms::Cartesian2 for Vector2 {
     #[inline]
-    fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
-        Vector2::new(self.x * scale + middle.x, middle.y - self.y * scale)
-    }
-
-    #[inline]
-    fn centered(&self, middle: &Vector2, scale: f64) -> Self {
-        Vector2::new((self.x - middle.x) / scale, (middle.y - self.y) / scale)
-    }
-
-    #[inline]
     fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
         self.x = self.x * scale + middle.x;
         self.y = middle.y - self.y * scale;
@@ -610,16 +613,6 @@ impl transforms::Cartesian2 for Vector2 {
 
 impl transforms::Cartesian2 for Vector3 {
     #[inline]
-    fn left_up(&self, middle: &Vector2, scale: f64) -> Self {
-        Vector3::new(self.x * scale + middle.x, middle.y - self.y * scale, 0.)
-    }
-
-    #[inline]
-    fn centered(&self, middle: &Vector2, scale: f64) -> Self {
-        Vector3::new((self.x - middle.x) / scale, (middle.y - self.y) / scale, 0.)
-    }
-
-    #[inline]
     fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
         self.x = self.x * scale + middle.x;
         self.y = middle.y - self.y * scale;
@@ -635,12 +628,25 @@ impl transforms::Cartesian2 for Vector3 {
 }
 
 impl transforms::Rotation3 for Vector3 {
-    fn rotation(&self, angle: f64, axis: &Vector3) -> Self {
-        unimplemented!()
-    }
-
     fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
-        unimplemented!()
+        let c = angle.cos();
+        let s = angle.sin();
+        let k = 1. - c;
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+        let ux = axis.x;
+        let uy = axis.y;
+        let uz = axis.z;
+
+        let k_uxy = k * ux * uy;
+        let k_uxz = k * ux * uz;
+        let k_uyz = k * uy * uz;
+
+        self.x = (k * ux * ux + c) * x + (k_uxy - uz * s) * y + (k_uxz + uy * s) * z;
+        self.y = (k_uxy + uz * s) * x + (k * uy * uy + c) * y + (k_uyz - ux * s) * z;
+        self.z = (k_uxz - uy * s) * x + (k_uyz + ux * s) * y + (k * uz * uz + c) * z;
+        self
     }
 
     fn set_rotation_x(&mut self, angle: f64) -> &mut Self {
@@ -648,6 +654,7 @@ impl transforms::Rotation3 for Vector3 {
         let s = angle.sin();
         let y = self.y;
         let z = self.z;
+
         self.y = y * c - z * s;
         self.z = y * s + z * c;
         self
@@ -658,6 +665,7 @@ impl transforms::Rotation3 for Vector3 {
         let s = -angle.sin();
         let x = self.x;
         let z = self.z;
+
         self.x = x * c + z * s;
         self.z = x * s - z * c;
         self
@@ -668,6 +676,7 @@ impl transforms::Rotation3 for Vector3 {
         let s = angle.sin();
         let x = self.x;
         let y = self.y;
+
         self.x = x * c - y * s;
         self.y = x * s + y * c;
         self
