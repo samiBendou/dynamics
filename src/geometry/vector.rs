@@ -12,7 +12,7 @@ use std::ops::{
 
 use crate::geometry::common::*;
 use crate::geometry::common::coordinates::Polar;
-use crate::geometry::matrix::{Matrix3, Matrix4};
+use crate::geometry::matrix::{Matrix2, Matrix3, Matrix4};
 use crate::geometry::point::Point2;
 
 pub static EX: Vector2 = Vector2 { x: 1., y: 0. };
@@ -311,6 +311,15 @@ impl_vector!(Vector2 {x, y}, 2);
 impl_vector!(Vector3 {x, y, z}, 3);
 impl_vector!(Vector4 {x, y, z, w}, 4);
 impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
+
+impl MulAssign<Matrix2> for Vector2 {
+    fn mul_assign(&mut self, rhs: Matrix2) {
+        let x = self.x;
+        let y = self.y;
+        self.x = rhs.xx * x + rhs.xy * y;
+        self.y = rhs.yx * x + rhs.yy * y;
+    }
+}
 
 impl MulAssign<Matrix3> for Vector3 {
     fn mul_assign(&mut self, rhs: Matrix3) {

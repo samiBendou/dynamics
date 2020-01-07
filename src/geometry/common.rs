@@ -139,6 +139,36 @@ pub mod transforms {
         fn set_translation(&mut self, vector: &T) -> &mut Self;
     }
 
+    pub trait Rigid<U, T> where
+        Self: std::marker::Sized + Copy + Clone + Initializer {
+        fn from_rigid(rotation: &U, vector: &T) -> Self {
+            let mut ret = Self::zeros();
+            ret.set_rigid(rotation, vector);
+            ret
+        }
+        fn rigid(&self, rotation: &U, vector: &T) -> Self {
+            let mut ret = *self;
+            ret.set_rigid(rotation, vector);
+            ret
+        }
+        fn set_rigid(&mut self, rotation: &U, vector: &T) -> &mut Self;
+    }
+
+    pub trait Rotation2 where
+        Self: std::marker::Sized + Copy + Clone + Initializer {
+        fn from_rotation(angle: f64) -> Self {
+            let mut ret = Self::zeros();
+            ret.set_rotation(angle);
+            ret
+        }
+        fn rotation(&self, angle: f64) -> Self {
+            let mut ret = *self;
+            ret.set_rotation(angle);
+            ret
+        }
+        fn set_rotation(&mut self, angle: f64) -> &mut Self;
+    }
+
     pub trait Rotation3 where
         Self: std::marker::Sized + Copy + Clone + Initializer {
         fn from_rotation(angle: f64, axis: &Vector3) -> Self {

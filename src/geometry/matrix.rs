@@ -131,6 +131,40 @@ impl MulAssign<Matrix3> for Matrix3 {
     }
 }
 
+impl Mul<Matrix2> for Matrix2 {
+    type Output = Matrix2;
+
+    fn mul(self, rhs: Matrix2) -> Self::Output {
+        let mut ret = self;
+        ret *= rhs;
+        ret
+    }
+}
+
+impl Mul<Vector2> for Matrix2 {
+    type Output = Vector2;
+
+    fn mul(self, rhs: Vector2) -> Self::Output {
+        let mut ret = rhs;
+        ret *= self;
+        ret
+    }
+}
+
+impl MulAssign<Matrix2> for Matrix2 {
+    fn mul_assign(&mut self, rhs: Matrix2) {
+        let xx = self.xx;
+        let yx = self.yx;
+        let xy = self.xy;
+        let yy = self.yy;
+
+        self.xx = rhs.xx * xx + rhs.yx * xy;
+        self.yx = rhs.xx * yx + rhs.yx * yy;
+        self.xy = rhs.xy * xx + rhs.yy * xy;
+        self.yy = rhs.xy * yx + rhs.yy * yy;
+    }
+}
+
 impl Mul<Matrix4> for Matrix4 {
     type Output = Matrix4;
 
@@ -489,9 +523,61 @@ impl transforms::Translation<Vector3> for Matrix4 {
     }
 }
 
+impl transforms::Rigid<Matrix2, Vector2> for Matrix3 {
+    fn set_rigid(&mut self, rotation: &Matrix2, vector: &Vector2) -> &mut Self {
+        self.xx = rotation.xx;
+        self.xy = rotation.xy;
+        self.xz = vector.x;
+        self.yx = rotation.yx;
+        self.yy = rotation.yy;
+        self.yz = vector.y;
+        self.zx = 0.;
+        self.zy = 0.;
+        self.zz = 1.;
+
+        self
+    }
+}
+
+impl transforms::Rigid<Matrix3, Vector3> for Matrix4 {
+    fn set_rigid(&mut self, rotation: &Matrix3, vector: &Vector3) -> &mut Self {
+        self.xx = rotation.xx;
+        self.xy = rotation.xy;
+        self.xz = rotation.xz;
+        self.xw = vector.x;
+        self.yx = rotation.yx;
+        self.yy = rotation.yy;
+        self.yz = rotation.yz;
+        self.yw = vector.y;
+        self.zx = rotation.zx;
+        self.zy = rotation.zy;
+        self.zz = rotation.zz;
+        self.zw = vector.z;
+        self.wx = 0.;
+        self.wy = 0.;
+        self.wz = 0.;
+        self.ww = 1.;
+
+        self
+    }
+}
+
+impl transforms::Rotation2 for Matrix2 {
+    fn set_rotation(&mut self, angle: f64) -> &mut Self {
+        let c = angle.cos();
+        let s = angle.sin();
+
+        self.xx = c;
+        self.xy = -s;
+        self.yx = s;
+        self.yy = c;
+
+        self
+    }
+}
+
 impl transforms::Rotation3 for Matrix3 {
     fn set_rotation(&mut self, angle: f64, axis: &Vector3) -> &mut Self {
-
         let c = angle.cos();
         let s = angle.sin();
         let k = 1. - c;
@@ -575,7 +661,6 @@ mod tests {
         use crate::geometry::common::*;
         use crate::geometry::common::coordinates::{Cartesian2, Cartesian3};
         use crate::geometry::common::transforms::Rotation3;
-        use crate::geometry::matrix::Matrix4;
         use crate::geometry::vector::Vector3;
 
         use super::super::Algebra;
@@ -637,7 +722,8 @@ mod tests {
     mod matrix4 {
         use crate::geometry::common::*;
         use crate::geometry::common::coordinates::{Cartesian2, Homogeneous};
-        use crate::geometry::common::transforms::Translation;
+        use crate::geometry::common::transforms::{Rigid, Rotation3, Translation};
+        use crate::geometry::matrix::Matrix3;
         use crate::geometry::vector::Vector3;
 
         use super::super::Algebra;
@@ -682,6 +768,17 @@ mod tests {
             let u = unit_x.homogeneous();
             let translated = a * u;
             assert_eq!(Vector3::from_homogeneous(&translated), (unit_x * 2.));
+        }
+
+        #[test]
+        fn rigid() {
+            let angle = std::f64::consts::FRAC_PI_2;
+            let unit_x = Vector3::unit_x();
+            let rotation_z = Matrix3::from_rotation_z(angle);
+            let a = Matrix4::from_rigid(&rotation_z, &unit_x);
+            let u = unit_x.homogeneous();
+            let moved = a * u;
+            assert_eq!(Vector3::from_homogeneous(&moved), Vector3::new(1., 1., 0.));
         }
     }
 }
