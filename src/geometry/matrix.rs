@@ -450,34 +450,40 @@ impl Algebra<Matrix4> for Matrix4 {
     }
 }
 
-impl transforms::Cartesian2 for Matrix4 {
-    fn set_left_up(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
-        self.xx = scale;
+impl transforms::Translation<Vector2> for Matrix3 {
+    fn set_translation(&mut self, vector: &Vector2) -> &mut Self {
+        self.xx = 1.;
         self.xy = 0.;
-        self.xz = 0.;
-        self.xw = 0.;
+        self.xz = vector.x;
         self.yx = 0.;
-        self.yy = scale;
-        self.yz = 0.;
-        self.yw = 0.;
+        self.yy = 1.;
+        self.yz = vector.y;
         self.zx = 0.;
         self.zy = 0.;
-        self.zz = scale;
-        self.zz = scale;
+        self.zz = 1.;
 
         self
     }
+}
 
-    fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self {
-        self.xx = 1. / scale;
+impl transforms::Translation<Vector3> for Matrix4 {
+    fn set_translation(&mut self, vector: &Vector3) -> &mut Self {
+        self.xx = 1.;
         self.xy = 0.;
         self.xz = 0.;
+        self.xw = vector.x;
         self.yx = 0.;
-        self.yy = 1. / scale;
+        self.yy = 1.;
         self.yz = 0.;
+        self.yw = vector.y;
         self.zx = 0.;
         self.zy = 0.;
-        self.zz = 1. / scale;
+        self.zz = 1.;
+        self.zw = vector.z;
+        self.wx = 0.;
+        self.wy = 0.;
+        self.wz = 0.;
+        self.ww = 1.;
 
         self
     }
@@ -507,12 +513,14 @@ impl transforms::Rotation3 for Matrix3 {
         self.zx = k_uxz - uy * s;
         self.zy = k_uyz + ux * s;
         self.zz = k * uz * uz + c;
+
         self
     }
 
     fn set_rotation_x(&mut self, angle: f64) -> &mut Self {
         let c = angle.cos();
         let s = angle.sin();
+
         self.xx = 1.;
         self.xy = 0.;
         self.xz = 0.;
@@ -529,6 +537,7 @@ impl transforms::Rotation3 for Matrix3 {
     fn set_rotation_y(&mut self, angle: f64) -> &mut Self {
         let c = angle.cos();
         let s = angle.sin();
+
         self.xx = c;
         self.xy = 0.;
         self.xz = s;
@@ -545,6 +554,7 @@ impl transforms::Rotation3 for Matrix3 {
     fn set_rotation_z(&mut self, angle: f64) -> &mut Self {
         let c = angle.cos();
         let s = angle.sin();
+
         self.xx = c;
         self.xy = -s;
         self.xz = 0.;
@@ -626,6 +636,9 @@ mod tests {
 
     mod matrix4 {
         use crate::geometry::common::*;
+        use crate::geometry::common::coordinates::{Cartesian2, Homogeneous};
+        use crate::geometry::common::transforms::Translation;
+        use crate::geometry::vector::Vector3;
 
         use super::super::Algebra;
         use super::super::Matrix4;
@@ -660,6 +673,15 @@ mod tests {
         fn adjugate() {
             let a = Matrix4::eye() * 2.;
             assert_eq!(a.adjugate(), a.inverse() * a.determinant());
+        }
+
+        #[test]
+        fn translations() {
+            let unit_x = Vector3::unit_x();
+            let a = Matrix4::from_translation(&unit_x);
+            let u = unit_x.homogeneous();
+            let translated = a * u;
+            assert_eq!(Vector3::from_homogeneous(&translated), (unit_x * 2.));
         }
     }
 }

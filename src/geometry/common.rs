@@ -124,6 +124,21 @@ pub mod transforms {
         fn set_centered(&mut self, middle: &Vector2, scale: f64) -> &mut Self;
     }
 
+    pub trait Translation<T> where
+        Self: std::marker::Sized + Copy + Clone + Initializer {
+        fn from_translation(vector: &T) -> Self {
+            let mut ret = Self::zeros();
+            ret.set_translation(vector);
+            ret
+        }
+        fn translation(&self, vector: &T) -> Self {
+            let mut ret = *self;
+            ret.set_translation(vector);
+            ret
+        }
+        fn set_translation(&mut self, vector: &T) -> &mut Self;
+    }
+
     pub trait Rotation3 where
         Self: std::marker::Sized + Copy + Clone + Initializer {
         fn from_rotation(angle: f64, axis: &Vector3) -> Self {
