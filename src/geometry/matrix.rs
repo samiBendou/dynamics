@@ -85,6 +85,40 @@ pub trait Algebra<T> where
     fn set_adjugate(&mut self) -> &mut Self;
 }
 
+impl Mul<Matrix2> for Matrix2 {
+    type Output = Matrix2;
+
+    fn mul(self, rhs: Matrix2) -> Self::Output {
+        let mut ret = self;
+        ret *= rhs;
+        ret
+    }
+}
+
+impl Mul<Vector2> for Matrix2 {
+    type Output = Vector2;
+
+    fn mul(self, rhs: Vector2) -> Self::Output {
+        let mut ret = rhs;
+        ret *= self;
+        ret
+    }
+}
+
+impl MulAssign<Matrix2> for Matrix2 {
+    fn mul_assign(&mut self, rhs: Matrix2) {
+        let xx = self.xx;
+        let yx = self.yx;
+        let xy = self.xy;
+        let yy = self.yy;
+
+        self.xx = rhs.xx * xx + rhs.yx * xy;
+        self.yx = rhs.xx * yx + rhs.yx * yy;
+        self.xy = rhs.xy * xx + rhs.yy * xy;
+        self.yy = rhs.xy * yx + rhs.yy * yy;
+    }
+}
+
 impl Mul<Matrix3> for Matrix3 {
     type Output = Matrix3;
 
@@ -128,40 +162,6 @@ impl MulAssign<Matrix3> for Matrix3 {
         self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz;
         self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz;
         self.zz = rhs.xz * zx + rhs.yz * zy + rhs.zz * zz;
-    }
-}
-
-impl Mul<Matrix2> for Matrix2 {
-    type Output = Matrix2;
-
-    fn mul(self, rhs: Matrix2) -> Self::Output {
-        let mut ret = self;
-        ret *= rhs;
-        ret
-    }
-}
-
-impl Mul<Vector2> for Matrix2 {
-    type Output = Vector2;
-
-    fn mul(self, rhs: Vector2) -> Self::Output {
-        let mut ret = rhs;
-        ret *= self;
-        ret
-    }
-}
-
-impl MulAssign<Matrix2> for Matrix2 {
-    fn mul_assign(&mut self, rhs: Matrix2) {
-        let xx = self.xx;
-        let yx = self.yx;
-        let xy = self.xy;
-        let yy = self.yy;
-
-        self.xx = rhs.xx * xx + rhs.yx * xy;
-        self.yx = rhs.xx * yx + rhs.yx * yy;
-        self.xy = rhs.xy * xx + rhs.yy * xy;
-        self.yy = rhs.xy * yx + rhs.yy * yy;
     }
 }
 
@@ -223,6 +223,63 @@ impl MulAssign<Matrix4> for Matrix4 {
         self.yw = rhs.xw * yx + rhs.yw * yy + rhs.zw * yz + rhs.ww * yw;
         self.zw = rhs.xw * zx + rhs.yw * zy + rhs.zw * zz + rhs.ww * zw;
         self.ww = rhs.xw * wx + rhs.yw * wy + rhs.zw * wz + rhs.ww * ww;
+    }
+}
+
+impl Algebra<Matrix2> for Matrix2 {
+    fn eye() -> Self {
+        Matrix2::new(1., 0., 0., 1.)
+    }
+
+    fn determinant(&self) -> f64 {
+        let xx = self.xx;
+        let yx = self.yx;
+        let xy = self.xy;
+        let yy = self.yy;
+
+        xx * yy - xy * yx
+    }
+
+    fn set_inverse(&mut self) -> &mut Self {
+        let xx = self.xx;
+        let yx = self.yx;
+        let xy = self.xy;
+        let yy = self.yy;
+
+        let mut det = xx * yy - xy * yx;
+
+        if det < std::f64::EPSILON {
+            return self;
+        }
+
+        det = 1. / det;
+
+        self.xx = yy * det;
+        self.xy = -xy * det;
+        self.yx = -yx * det;
+        self.yy = xx * det;
+
+        self
+    }
+
+    fn set_transposed(&mut self) -> &mut Self {
+        let yx = self.yx;
+
+        self.yx = self.xy;
+        self.xy = yx;
+
+        self
+    }
+
+    fn set_adjugate(&mut self) -> &mut Self {
+        let xx = self.xx;
+
+        self.xx = self.yy;
+        self.yx = -self.yx;
+        self.xy = -self.xy;
+        self.yy = xx;
+
+        self
     }
 }
 
@@ -557,6 +614,22 @@ impl transforms::Rigid<Matrix3, Vector3> for Matrix4 {
         self.wy = 0.;
         self.wz = 0.;
         self.ww = 1.;
+
+        self
+    }
+}
+
+impl transforms::Similarity<Matrix2, Vector2> for Matrix3 {
+    fn set_similarity(&mut self, scale: f64, rotation: &Matrix2, vector: &Vector2) -> &mut Self {
+        self.xx = scale * rotation.xx;
+        self.xy = scale * rotation.xy;
+        self.xz = vector.x;
+        self.yx = scale * rotation.yx;
+        self.yy = scale * rotation.yy;
+        self.yz = vector.y;
+        self.zx = 0.;
+        self.zy = 0.;
+        self.zz = 1.;
 
         self
     }
