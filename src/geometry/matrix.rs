@@ -24,26 +24,6 @@ pub struct Matrix2 {
 }
 
 #[derive(Copy, Clone)]
-pub struct Matrix23 {
-    pub xx: f64,
-    pub xy: f64,
-    pub xz: f64,
-    pub yx: f64,
-    pub yy: f64,
-    pub yz: f64,
-}
-
-#[derive(Copy, Clone)]
-pub struct Matrix32 {
-    pub xx: f64,
-    pub xy: f64,
-    pub yx: f64,
-    pub yy: f64,
-    pub zx: f64,
-    pub zy: f64,
-}
-
-#[derive(Copy, Clone)]
 pub struct Matrix3 {
     pub xx: f64,
     pub xy: f64,
@@ -54,22 +34,6 @@ pub struct Matrix3 {
     pub zx: f64,
     pub zy: f64,
     pub zz: f64,
-}
-
-#[derive(Copy, Clone)]
-pub struct Matrix34 {
-    pub xx: f64,
-    pub xy: f64,
-    pub xz: f64,
-    pub xw: f64,
-    pub yx: f64,
-    pub yy: f64,
-    pub yz: f64,
-    pub yw: f64,
-    pub zx: f64,
-    pub zy: f64,
-    pub zz: f64,
-    pub zw: f64,
 }
 
 #[derive(Copy, Clone)]
@@ -93,10 +57,7 @@ pub struct Matrix4 {
 }
 
 impl_vector!(Matrix2 {xx, xy, yx, yy}, 4);
-impl_vector!(Matrix23 {xx, xy, xz, yx, yy, yz}, 6);
-impl_vector!(Matrix32 {xx, xy, yx, yy, zx, zy}, 6);
 impl_vector!(Matrix3 {xx, xy, xz, yx, yy, yz, zx, zy, zz}, 9);
-impl_vector!(Matrix34 {xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw}, 12);
 impl_vector!(Matrix4 {xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww}, 16);
 
 pub trait Algebra<T> where
@@ -158,47 +119,6 @@ impl MulAssign<Matrix2> for Matrix2 {
     }
 }
 
-impl Mul<Matrix3> for Matrix23 {
-    type Output = Matrix23;
-
-    fn mul(self, rhs: Matrix3) -> Self::Output {
-        let mut ret = self;
-        ret *= rhs;
-        ret
-    }
-}
-
-impl Mul<Vector3> for Matrix23 {
-    type Output = Vector2;
-
-    fn mul(self, rhs: Vector3) -> Self::Output {
-        let mut ret = Vector2::zeros();
-        ret.x = self.xx * rhs.x + self.xy * rhs.y + self.xz * rhs.z;
-        ret.y = self.yx * rhs.x + self.yy * rhs.y + self.yz * rhs.z;
-        ret
-    }
-}
-
-impl MulAssign<Matrix3> for Matrix23 {
-    fn mul_assign(&mut self, rhs: Matrix3) {
-        let xx = self.xx;
-        let yx = self.yx;
-        let xy = self.xy;
-        let yy = self.yy;
-        let xz = self.xz;
-        let yz = self.yz;
-
-        self.xx = rhs.xx * xx + rhs.yx * xy + rhs.zx * xz;
-        self.yx = rhs.xx * yx + rhs.yx * yy + rhs.zx * yz;
-
-        self.xy = rhs.xy * xx + rhs.yy * xy + rhs.zy * xz;
-        self.yy = rhs.xy * yx + rhs.yy * yy + rhs.zy * yz;
-
-        self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz;
-        self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz;
-    }
-}
-
 impl Mul<Matrix3> for Matrix3 {
     type Output = Matrix3;
 
@@ -242,61 +162,6 @@ impl MulAssign<Matrix3> for Matrix3 {
         self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz;
         self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz;
         self.zz = rhs.xz * zx + rhs.yz * zy + rhs.zz * zz;
-    }
-}
-
-impl Mul<Matrix4> for Matrix34 {
-    type Output = Matrix34;
-
-    fn mul(self, rhs: Matrix4) -> Self::Output {
-        let mut ret = self;
-        ret *= rhs;
-        ret
-    }
-}
-
-impl Mul<Vector4> for Matrix34 {
-    type Output = Vector3;
-
-    fn mul(self, rhs: Vector4) -> Self::Output {
-        let mut ret = Vector3::zeros();
-        ret.x = self.xx * rhs.x + self.xy * rhs.y + self.xz * rhs.z + self.xw * rhs.w;
-        ret.y = self.yx * rhs.x + self.yy * rhs.y + self.yz * rhs.z + self.yw * rhs.w;
-        ret.z = self.zx * rhs.x + self.zy * rhs.y + self.zz * rhs.z + self.zw * rhs.w;
-        ret
-    }
-}
-
-impl MulAssign<Matrix4> for Matrix34 {
-    fn mul_assign(&mut self, rhs: Matrix4) {
-        let xx = self.xx;
-        let yx = self.yx;
-        let zx = self.zx;
-        let xy = self.xy;
-        let yy = self.yy;
-        let zy = self.zy;
-        let xz = self.xz;
-        let yz = self.yz;
-        let zz = self.zz;
-        let xw = self.xw;
-        let yw = self.yw;
-        let zw = self.zw;
-
-        self.xx = rhs.xx * xx + rhs.yx * xy + rhs.zx * xz + rhs.wx * xw;
-        self.yx = rhs.xx * yx + rhs.yx * yy + rhs.zx * yz + rhs.wx * yw;
-        self.zx = rhs.xx * zx + rhs.yx * zy + rhs.zx * zz + rhs.wx * zw;
-
-        self.xy = rhs.xy * xx + rhs.yy * xy + rhs.zy * xz + rhs.wy * xw;
-        self.yy = rhs.xy * yx + rhs.yy * yy + rhs.zy * yz + rhs.wy * yw;
-        self.zy = rhs.xy * zx + rhs.yy * zy + rhs.zy * zz + rhs.wy * zw;
-
-        self.xz = rhs.xz * xx + rhs.yz * xy + rhs.zz * xz + rhs.wz * xw;
-        self.yz = rhs.xz * yx + rhs.yz * yy + rhs.zz * yz + rhs.wz * yw;
-        self.zz = rhs.xz * zx + rhs.yz * zy + rhs.zz * zz + rhs.wz * zw;
-
-        self.xw = rhs.xw * xx + rhs.yw * xy + rhs.zw * xz + rhs.ww * xw;
-        self.yw = rhs.xw * yx + rhs.yw * yy + rhs.zw * yz + rhs.ww * yw;
-        self.zw = rhs.xw * zx + rhs.yw * zy + rhs.zw * zz + rhs.ww * zw;
     }
 }
 
@@ -888,25 +753,6 @@ impl transforms::Rotation3 for Matrix3 {
 
 #[cfg(test)]
 mod tests {
-    mod matrix23 {
-        use crate::geometry::common::Initializer;
-        use crate::geometry::matrix::{Algebra, Matrix3};
-        use crate::geometry::vector::{Vector2, Vector3};
-
-        use super::super::Matrix23;
-
-        #[test]
-        fn arithmetic() {
-            let a = Matrix3::eye() * 2.;
-            let b = Matrix23::ones();
-            let u = Vector3::ones();
-            let c = b * a;
-            let v = b * u;
-            assert_eq!(c, b * 2.);
-            assert_eq!(v, Vector2::new(3., 3.));
-        }
-    }
-
     mod matrix3 {
         use crate::geometry::common::*;
         use crate::geometry::common::coordinates::{Cartesian2, Cartesian3};
