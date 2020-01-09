@@ -66,12 +66,12 @@ impl<T> Point<T> where
     }
 
     #[inline]
-    pub fn update_origin(&mut self, origin: &Self, old_origin: &Self) -> &mut Self {
+    pub fn reset_origin(&mut self, origin: &Self, old_origin: &Self) -> &mut Self {
         self.position += old_origin.position;
-        self.position -= origin.position;
         self.speed += old_origin.speed;
-        self.speed -= origin.speed;
         self.trajectory += old_origin.trajectory;
+        self.position -= origin.position;
+        self.speed -= origin.speed;
         self.trajectory -= origin.trajectory;
         self
     }

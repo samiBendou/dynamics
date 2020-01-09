@@ -2,14 +2,11 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{Index, IndexMut};
 
-use rand::Rng;
-
 use crate::dynamics::orbital::Orbit;
 use crate::dynamics::point::Point3;
-use crate::dynamics::solver::{Method, Solver};
+use crate::dynamics::solver::Solver;
 use crate::geometry;
 use crate::geometry::common::*;
-use crate::geometry::point::ZERO;
 use crate::geometry::vector::{Vector3, Vector6};
 
 pub mod point;
@@ -61,11 +58,7 @@ impl Debug for Body {
 
 pub struct Cluster {
     pub bodies: Vec<Body>,
-    pub solver: Solver,
     barycenter: Point3,
-    origin: geometry::point::Point3,
-    current: usize,
-    frame: Frame,
 }
 
 impl Cluster {
@@ -73,49 +66,11 @@ impl Cluster {
         Cluster {
             bodies,
             barycenter: Point3::zeros(0.),
-            origin: ZERO,
-            current: 0,
-            solver: Solver::new(1., Method::RungeKutta4),
-            frame: Frame::Zero,
         }
     }
 
     pub fn empty() -> Self {
         Cluster::new(vec![])
-    }
-
-    pub fn orbital(cluster: &orbital::Cluster, true_anomalies: Vec<f64>) -> Self {
-        let len = cluster.bodies.len();
-        let mut bodies: Vec<Body> = Vec::with_capacity(len);
-        let mut body;
-        for i in 0..len {
-            body = Body::orbital(
-                &cluster.bodies[i].name,
-                &cluster.bodies[i].orbit,
-                true_anomalies[i],
-                cluster.bodies[i].mass,
-            );
-            bodies.push(body);
-        }
-        Cluster::new(bodies)
-    }
-
-    pub fn orbital_at(cluster: &orbital::Cluster, true_anomaly: f64) -> Self {
-        let mut true_anomalies = Vec::with_capacity(cluster.bodies.len());
-        for _ in cluster.bodies.iter() {
-            true_anomalies.push(true_anomaly)
-        }
-        Cluster::orbital(cluster, true_anomalies)
-    }
-
-    pub fn orbital_at_random(cluster: &orbital::Cluster) -> Self {
-        let two_pi = 2. * std::f64::consts::PI;
-        let mut rng = rand::thread_rng();
-        let mut true_anomalies: Vec<f64> = Vec::with_capacity(cluster.bodies.len());
-        for _ in cluster.bodies.iter() {
-            true_anomalies.push(rng.gen_range(0., two_pi))
-        }
-        Cluster::orbital(cluster, true_anomalies)
     }
 
     #[inline]
@@ -132,27 +87,6 @@ impl Cluster {
     pub fn barycenter(&self) -> &Point3 {
         &self.barycenter
     }
-
-    #[inline]
-    pub fn current(&self) -> Option<&Body> {
-        self.bodies.get(self.current)
-    }
-
-    #[inline]
-    pub fn current_mut(&mut self) -> Option<&mut Body> {
-        self.bodies.get_mut(self.current)
-    }
-
-    #[inline]
-    pub fn current_index(&self) -> usize {
-        self.current
-    }
-
-    #[inline]
-    pub fn last(&self) -> Option<&Body> { self.bodies.last() }
-
-    #[inline]
-    pub fn last_mut(&mut self) -> Option<&mut Body> { self.bodies.last_mut() }
 
     #[inline]
     pub fn kinetic_energy(&self) -> f64 {
@@ -225,34 +159,87 @@ impl Cluster {
         self
     }
 
+    pub fn push(&mut self, body: Body) -> &mut Self {
+        self.bodies.push(body);
+        self.update_barycenter()
+    }
+
+    pub fn pop(&mut self) -> Option<Body> {
+        let ret = self.bodies.pop();
+        self.update_barycenter();
+        ret
+    }
+
+    pub fn remove(&mut self, i: usize) -> Body {
+        let ret = self.bodies.remove(i);
+        self.update_barycenter();
+        ret
+    }
+
     #[inline]
-    fn update_origin(&mut self) -> &mut Self {
-        self.origin.position = self.current_origin().position;
-        self.origin.speed = self.current_origin().speed;
+    pub fn reset0_at(&mut self, i: usize) -> &mut Self {
+        self.bodies[i].center.state.reset0();
+        self.bodies[i].center.state.trajectory.reset0();
+        self.update_barycenter()
+    }
+
+    #[inline]
+    pub fn reset_trajectory_at(&mut self, i: usize) -> &mut Self {
+        let position = self.bodies[i].center.state.position;
+        self.bodies[i].center.state.trajectory.reset(&position);
+        self.update_barycenter()
+    }
+
+    #[inline]
+    pub fn translate_at(&mut self, i: usize, direction: &Vector3) -> &mut Self {
+        self.bodies[i].center.state.position += *direction;
+        self.bodies[i].center.state.update_trajectory();
+        self.update_barycenter()
+    }
+
+    #[inline]
+    pub fn translate(&mut self, direction: &Vector3) -> &mut Self {
+        self.barycenter.state.position += *direction;
+        for body in self.bodies.iter_mut() {
+            body.center.state.position += *direction;
+        }
+        self.update_trajectory()
+    }
+
+    #[inline]
+    pub fn apply<T>(&mut self, solver: &mut Solver, f: T) -> &mut Self where
+        T: FnMut(&Vec<Body>, usize) -> Vector6 {
+        solver.step(&mut self.bodies, f);
+        self.update_barycenter()
+            .update_trajectory()
+    }
+
+    #[inline]
+    pub fn set_absolute(&mut self, origin: &geometry::point::Point3) -> &mut Self {
+        self.barycenter.state += *origin;
+        for body in self.bodies.iter_mut() {
+            body.center.state += *origin;
+        }
         self
     }
 
     #[inline]
-    fn current_origin(&mut self) -> &geometry::point::Point3 {
-        if self.is_empty() {
-            return &ZERO;
+    pub fn set_relative(&mut self, origin: &geometry::point::Point3) -> &mut Self {
+        self.barycenter.state -= *origin;
+        *self.barycenter.state.trajectory.last_mut() -= *origin.trajectory.last();
+        for body in self.bodies.iter_mut() {
+            body.center.state -= *origin;
+            *body.center.state.trajectory.last_mut() -= *origin.trajectory.last();
         }
-        match self.frame {
-            Frame::Zero => &ZERO,
-            Frame::Current => &self.bodies[self.current].center.state,
-            Frame::Barycenter => &self.barycenter.state,
-        }
+        self
     }
 
-    pub fn reset_origin(&mut self, origin: geometry::point::Point3) -> &mut Self {
-        if self.is_empty() {
-            return self;
-        }
-        self.barycenter.state.update_origin(&origin, &ZERO);
+    #[inline]
+    pub fn reset_origin(&mut self, origin: &geometry::point::Point3, old_origin: &geometry::point::Point3) -> &mut Self {
+        self.barycenter.state.reset_origin(origin, old_origin);
         for body in self.bodies.iter_mut() {
-            body.center.state.update_origin(&origin, &ZERO);
+            body.center.state.reset_origin(origin, old_origin);
         }
-        self.origin = origin;
         self
     }
 
@@ -268,147 +255,20 @@ impl Cluster {
         self
     }
 
-    pub fn push(&mut self, body: Body) -> &mut Self {
-        self.bodies.push(body);
-        self.update_barycenter()
-    }
-
-    pub fn pop(&mut self) -> Option<Body> {
-        let len = self.bodies.len();
-        if self.current != 0 && self.current == len - 1 {
-            self.current -= 1;
-        }
-        let body = self.bodies.pop();
-        self.update_barycenter();
-        body
-    }
-
-    pub fn remove(&mut self, index: usize) -> Body {
-        let len = self.bodies.len();
-        if index == len - 1 {
-            self.pop().unwrap()
-        } else {
-            if self.current == len - 1 {
-                self.current -= 1;
-            }
-            let ret = self.bodies.remove(index);
-            self.update_barycenter();
-            ret
-        }
-    }
-
-    pub fn update_current_index(&mut self, increase: bool, bypass_last: bool) -> &mut Self {
-        if increase {
-            self.increase_current(bypass_last);
-        } else {
-            self.decrease_current();
-        }
-        if self.frame == Frame::Current {
-            let origin = *self.current_origin();
-            self.reset_origin(origin).update_barycenter();
-        }
-        self
-    }
-
     #[inline]
-    pub fn update_frame(&mut self) -> &mut Self {
-        self.frame.next();
-        let origin = *self.current_origin();
-        self.reset_origin(origin).update_barycenter()
-    }
-
-    #[inline]
-    pub fn reset0_current(&mut self) -> &mut Self {
-        self.bodies[self.current].center.state.reset0();
-        self.bodies[self.current].center.state.trajectory.reset0();
-        self.update_barycenter()
-    }
-
-    #[inline]
-    pub fn reset_current_trajectory(&mut self) -> &mut Self {
-        let position = self.bodies[self.current].center.state.position;
-        self.bodies[self.current].center.state.trajectory.reset(&position);
-        self.update_barycenter()
-    }
-
-    #[inline]
-    pub fn update_current_trajectory(&mut self) -> &mut Self {
-        self.bodies[self.current].center.state.update_trajectory();
-        self
-    }
-
-    #[inline]
-    pub fn translate_current(&mut self, direction: &Vector3) -> &mut Self {
-        self.bodies[self.current].center.state.position += *direction;
-        self.update_barycenter()
-    }
-
-    pub fn translate(&mut self, direction: &Vector3) -> &mut Self {
-        self.barycenter.state.position += *direction;
-        for body in self.bodies.iter_mut() {
-            body.center.state.position += *direction;
-        }
-        self
-    }
-
-    #[inline]
-    pub fn apply<T>(&mut self, dt: f64, iterations: u32, f: T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector6 {
-        self.set_absolute();
-        self.solver.dt = dt;
-        self.solver.step(&mut self.bodies, f, iterations);
-        self.update_barycenter()
-            .update_origin()
-            .set_relative()
-            .update_trajectory()
-    }
-    #[inline]
-    fn set_absolute(&mut self) -> &mut Self {
-        self.barycenter.state += self.origin;
-        for body in self.bodies.iter_mut() {
-            body.center.state += self.origin;
-        }
-        self
-    }
-    #[inline]
-    fn set_relative(&mut self) -> &mut Self {
-        self.barycenter.state -= self.origin;
-        for body in self.bodies.iter_mut() {
-            body.center.state -= self.origin;
-        }
-        self
-    }
-    #[inline]
-    fn update_trajectory(&mut self) -> &mut Self {
-        self.barycenter.state.update_trajectory();
-        self.origin.update_trajectory();
-        for body in self.bodies.iter_mut() {
-            body.center.state.update_trajectory();
-        }
-        self
-    }
-
     pub fn reset_trajectory(&mut self) -> &mut Self {
-        let origin_position = self.current_origin().position;
         self.barycenter.state.trajectory.reset(&self.barycenter.state.position);
-        self.origin.trajectory.reset(&origin_position);
         for body in self.bodies.iter_mut() {
             body.center.state.trajectory.reset(&body.center.state.position);
         }
         self
     }
 
-    fn decrease_current(&mut self) -> &mut Self {
-        if self.current > 0 {
-            self.current -= 1;
-        }
-        self
-    }
-
-    fn increase_current(&mut self, bypass_last: bool) -> &mut Self {
-        let offset = if bypass_last { 2 } else { 1 };
-        if self.current < self.bodies.len() - offset {
-            self.current += 1;
+    #[inline]
+    fn update_trajectory(&mut self) -> &mut Self {
+        self.barycenter.state.update_trajectory();
+        for body in self.bodies.iter_mut() {
+            body.center.state.update_trajectory();
         }
         self
     }

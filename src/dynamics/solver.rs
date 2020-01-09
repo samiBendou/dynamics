@@ -22,22 +22,29 @@ impl Method {
 
 pub struct Solver {
     pub dt: f64,
+    pub iterations: u32,
     pub method: Method,
     state: Vec<Vector6>,
     tmp: Vec<[Vector6; 4]>,
 }
 
+impl From<Method> for Solver {
+    fn from(method: Method) -> Self {
+        Solver::new(1., 1, method)
+    }
+}
+
 impl Solver {
-    pub fn new(dt: f64, method: Method) -> Solver {
-        Solver { dt, method, state: Vec::new(), tmp: Vec::new() }
+    pub fn new(dt: f64, iterations: u32, method: Method) -> Solver {
+        Solver { dt, iterations, method, state: Vec::new(), tmp: Vec::new() }
     }
 
-    pub fn step<T>(&mut self, bodies: &mut Vec<Body>, mut f: T, iterations: u32) -> &mut Self where
+    pub fn step<T>(&mut self, bodies: &mut Vec<Body>, mut f: T) -> &mut Self where
         T: FnMut(&Vec<Body>, usize) -> Vector6 {
         self.tmp = bodies.iter().map(|_body| [Vector6::zeros(); 4]).collect();
         self.state = bodies.iter().map(|_body| Vector6::zeros()).collect();
 
-        for _ in 0..iterations {
+        for _ in 0..self.iterations {
             match self.method {
                 Method::EulerExplicit => self.euler_explicit(bodies, &mut f),
                 Method::RungeKutta4 => self.runge_kutta_4(bodies, &mut f),
