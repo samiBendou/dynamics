@@ -355,7 +355,7 @@ impl Algebra<Matrix2> for Matrix2 {
 
         let mut det = xx * yy - xy * yx;
 
-        if det < std::f64::EPSILON {
+        if det == 0. {
             return self;
         }
 
@@ -429,7 +429,7 @@ impl Algebra<Matrix3> for Matrix3 {
         let dyz = yz * xy - yy * xz;
         let mut det = xx * dyx + yx * dyy + zx * dyz;
 
-        if det.abs() < std::f64::EPSILON {
+        if det == 0. {
             return self;
         }
 
@@ -559,7 +559,7 @@ impl Algebra<Matrix4> for Matrix4 {
 
         let mut det = d00 * d11 - d01 * d10 + d02 * d09 + d03 * d08 - d04 * d07 + d05 * d06;
 
-        if det.abs() < std::f64::EPSILON {
+        if det == 0. {
             return self;
         }
 
