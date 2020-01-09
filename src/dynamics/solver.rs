@@ -1,4 +1,4 @@
-use crate::dynamics::Body;
+use crate::dynamics::point::Point3;
 use crate::geometry::common::*;
 use crate::geometry::vector::Vector6;
 
@@ -39,63 +39,62 @@ impl Solver {
         Solver { dt, iterations, method, state: Vec::new(), tmp: Vec::new() }
     }
 
-    pub fn step<T>(&mut self, bodies: &mut Vec<Body>, mut f: T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector6 {
-        self.tmp = bodies.iter().map(|_body| [Vector6::zeros(); 4]).collect();
-        self.state = bodies.iter().map(|_body| Vector6::zeros()).collect();
-
+    pub fn step<T>(&mut self, points: &mut Vec<Point3>, mut f: T) -> &mut Self where
+        T: FnMut(&Vec<Point3>, usize) -> Vector6 {
+        self.tmp = points.iter().map(|_point| [Vector6::zeros(); 4]).collect();
+        self.state = points.iter().map(|_point| Vector6::zeros()).collect();
         for _ in 0..self.iterations {
             match self.method {
-                Method::EulerExplicit => self.euler_explicit(bodies, &mut f),
-                Method::RungeKutta4 => self.runge_kutta_4(bodies, &mut f),
+                Method::EulerExplicit => self.euler_explicit(points, &mut f),
+                Method::RungeKutta4 => self.runge_kutta_4(points, &mut f),
             };
-            for body in bodies.iter_mut() {
-                body.center.accelerate(self.dt);
+            for point in points.iter_mut() {
+                point.accelerate(self.dt);
             }
         }
         self
     }
 
-    fn euler_explicit<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector6 {
-        for j in 0..bodies.len() {
-            bodies[j].center.gradient = f(bodies, j);
+    fn euler_explicit<T>(&mut self, points: &mut Vec<Point3>, f: &mut T) -> &mut Self where
+        T: FnMut(&Vec<Point3>, usize) -> Vector6 {
+        for j in 0..points.len() {
+            points[j].gradient = f(points, j);
         }
         self
     }
 
-    fn runge_kutta_4<T>(&mut self, bodies: &mut Vec<Body>, f: &mut T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector6 {
+    fn runge_kutta_4<T>(&mut self, points: &mut Vec<Point3>, f: &mut T) -> &mut Self where
+        T: FnMut(&Vec<Point3>, usize) -> Vector6 {
         let half_dt = 0.5 * self.dt;
-        for j in 0..bodies.len() {
-            self.tmp[j][0] = f(bodies, j);
-            bodies[j].center.gradient = self.tmp[j][0];
+        for j in 0..points.len() {
+            self.tmp[j][0] = f(points, j);
+            points[j].gradient = self.tmp[j][0];
         }
-        for j in 0..bodies.len() {
-            self.state[j] = bodies[j].center.state.vector();
-            bodies[j].center.state.set_vector(&(self.state[j] + self.tmp[j][0] * half_dt));
+        for j in 0..points.len() {
+            self.state[j] = points[j].state.vector();
+            points[j].state.set_vector(&(self.state[j] + self.tmp[j][0] * half_dt));
         }
-        for j in 0..bodies.len() {
-            self.tmp[j][1] = f(bodies, j);
+        for j in 0..points.len() {
+            self.tmp[j][1] = f(points, j);
         }
-        for j in 0..bodies.len() {
-            bodies[j].center.gradient += self.tmp[j][1] * 2.;
-            bodies[j].center.state.set_vector(&(self.state[j] + self.tmp[j][1] * half_dt));
+        for j in 0..points.len() {
+            points[j].gradient += self.tmp[j][1] * 2.;
+            points[j].state.set_vector(&(self.state[j] + self.tmp[j][1] * half_dt));
         }
-        for j in 0..bodies.len() {
-            self.tmp[j][2] = f(bodies, j);
+        for j in 0..points.len() {
+            self.tmp[j][2] = f(points, j);
         }
-        for j in 0..bodies.len() {
-            bodies[j].center.gradient += self.tmp[j][2] * 2.;
-            bodies[j].center.state.set_vector(&(self.state[j] + self.tmp[j][2] * self.dt));
+        for j in 0..points.len() {
+            points[j].gradient += self.tmp[j][2] * 2.;
+            points[j].state.set_vector(&(self.state[j] + self.tmp[j][2] * self.dt));
         }
-        for j in 0..bodies.len() {
-            self.tmp[j][3] = f(bodies, j);
+        for j in 0..points.len() {
+            self.tmp[j][3] = f(points, j);
         }
-        for j in 0..bodies.len() {
-            bodies[j].center.gradient += self.tmp[j][3];
-            bodies[j].center.gradient *= FRAC_1_6;
-            bodies[j].center.state.set_vector(&self.state[j]);
+        for j in 0..points.len() {
+            points[j].gradient += self.tmp[j][3];
+            points[j].gradient *= FRAC_1_6;
+            points[j].state.set_vector(&self.state[j]);
         }
         self
     }

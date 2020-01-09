@@ -2,7 +2,6 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{Index, IndexMut};
 
-use crate::dynamics::orbital::Orbit;
 use crate::dynamics::point::Point3;
 use crate::dynamics::solver::Solver;
 use crate::geometry;
@@ -15,56 +14,15 @@ pub mod potentials;
 pub mod orbital;
 pub mod solver;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Frame {
-    Zero,
-    Current,
-    Barycenter,
-}
-
-impl Frame {
-    pub fn next(&mut self) {
-        use Frame::*;
-        *self = match self {
-            Zero => Current,
-            Current => Barycenter,
-            Barycenter => Zero,
-        }
-    }
-}
-
-pub struct Body {
-    pub name: String,
-    pub center: Point3,
-}
-
-impl Body {
-    pub fn new(name: &str, center: Point3) -> Body {
-        Body { name: String::from(name), center }
-    }
-
-    pub fn orbital(name: &str, orbit: &Orbit, true_anomaly: f64, mass: f64) -> Body {
-        let position = orbit.position_at(true_anomaly);
-        let speed = orbit.speed_at(true_anomaly);
-        Body::new(name, Point3::inertial(position, speed, mass))
-    }
-}
-
-impl Debug for Body {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "name: {}\n{:?}", self.name, self.center.state)
-    }
-}
-
 pub struct Cluster {
-    pub bodies: Vec<Body>,
+    pub points: Vec<Point3>,
     barycenter: Point3,
 }
 
 impl Cluster {
-    pub fn new(bodies: Vec<Body>) -> Self {
+    pub fn new(bodies: Vec<Point3>) -> Self {
         Cluster {
-            bodies,
+            points: bodies,
             barycenter: Point3::zeros(0.),
         }
     }
@@ -75,12 +33,12 @@ impl Cluster {
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.bodies.len() == 0
+        self.points.len() == 0
     }
 
     #[inline]
     pub fn len(&self) -> usize {
-        self.bodies.len()
+        self.points.len()
     }
 
     #[inline]
@@ -90,20 +48,20 @@ impl Cluster {
 
     #[inline]
     pub fn kinetic_energy(&self) -> f64 {
-        self.bodies.iter().map(|body| body.center.kinetic_energy()).sum()
+        self.points.iter().map(|point| point.kinetic_energy()).sum()
     }
 
     #[inline]
     pub fn angular_momentum(&self) -> f64 {
-        self.bodies.iter().map(|body| body.center.angular_momentum()).sum()
+        self.points.iter().map(|point| point.angular_momentum()).sum()
     }
 
     pub fn potential_energy<T>(&self, mut f: T) -> f64 where
-        T: FnMut(&Cluster, usize) -> f64 {
-        let len = self.bodies.len();
+        T: FnMut(&Vec<Point3>, usize) -> f64 {
+        let len = self.points.len();
         let mut ret = 0.;
         for i in 0..len {
-            ret += f(self, i);
+            ret += f(&self.points, i);
         }
         ret * 0.5
     }
@@ -112,9 +70,9 @@ impl Cluster {
         let mut max_distance = 0.;
         let mut max_index: usize = 0;
         let mut distance: f64;
-        let len = self.bodies.len();
+        let len = self.points.len();
         for i in 0..len {
-            distance = self.bodies[i].center.state.distance(&self.barycenter.state);
+            distance = self.points[i].state.distance(&self.barycenter.state);
             if distance > max_distance {
                 max_distance = distance;
                 max_index = i;
@@ -124,7 +82,7 @@ impl Cluster {
     }
 
     pub fn stats_distance_without(&self, index: Option<usize>) -> (f64, f64, Vec<f64>) {
-        let len = self.bodies.len();
+        let len = self.points.len();
         let mut mean = 0.;
         let mut sum2 = 0.;
         let mut distances: Vec<f64> = Vec::with_capacity(len);
@@ -133,7 +91,7 @@ impl Cluster {
             Some(index) => index,
         };
         for i in 0..len {
-            distances.push(self.bodies[i].center.state.distance(&self.barycenter.state));
+            distances.push(self.points[i].state.distance(&self.barycenter.state));
             if i == index {
                 continue;
             }
@@ -147,7 +105,7 @@ impl Cluster {
 
     pub fn remove_aways(&mut self) -> &mut Self {
         let (max_distance, max_index) = self.max_distance();
-        let (mean, deviation, _distances) = if self.bodies.len() < 3 {
+        let (mean, deviation, _distances) = if self.points.len() < 3 {
             self.stats_distance_without(None)
         } else {
             self.stats_distance_without(Some(max_index))
@@ -159,57 +117,57 @@ impl Cluster {
         self
     }
 
-    pub fn push(&mut self, body: Body) -> &mut Self {
-        self.bodies.push(body);
+    pub fn push(&mut self, point: Point3) -> &mut Self {
+        self.points.push(point);
         self.update_barycenter()
     }
 
-    pub fn pop(&mut self) -> Option<Body> {
-        let ret = self.bodies.pop();
+    pub fn pop(&mut self) -> Option<Point3> {
+        let ret = self.points.pop();
         self.update_barycenter();
         ret
     }
 
-    pub fn remove(&mut self, i: usize) -> Body {
-        let ret = self.bodies.remove(i);
+    pub fn remove(&mut self, i: usize) -> Point3 {
+        let ret = self.points.remove(i);
         self.update_barycenter();
         ret
     }
 
     #[inline]
     pub fn reset0_at(&mut self, i: usize) -> &mut Self {
-        self.bodies[i].center.state.reset0();
-        self.bodies[i].center.state.trajectory.reset0();
+        self.points[i].state.reset0();
+        self.points[i].state.trajectory.reset0();
         self.update_barycenter()
     }
 
     #[inline]
     pub fn reset_trajectory_at(&mut self, i: usize) -> &mut Self {
-        let position = self.bodies[i].center.state.position;
-        self.bodies[i].center.state.trajectory.reset(&position);
+        let position = self.points[i].state.position;
+        self.points[i].state.trajectory.reset(&position);
         self.update_barycenter()
     }
 
     #[inline]
     pub fn translate_at(&mut self, i: usize, direction: &Vector3) -> &mut Self {
-        self.bodies[i].center.state.position += *direction;
-        self.bodies[i].center.state.update_trajectory();
+        self.points[i].state.position += *direction;
+        self.points[i].state.update_trajectory();
         self.update_barycenter()
     }
 
     #[inline]
     pub fn translate(&mut self, direction: &Vector3) -> &mut Self {
         self.barycenter.state.position += *direction;
-        for body in self.bodies.iter_mut() {
-            body.center.state.position += *direction;
+        for body in self.points.iter_mut() {
+            body.state.position += *direction;
         }
         self.update_trajectory()
     }
 
     #[inline]
     pub fn apply<T>(&mut self, solver: &mut Solver, f: T) -> &mut Self where
-        T: FnMut(&Vec<Body>, usize) -> Vector6 {
-        solver.step(&mut self.bodies, f);
+        T: FnMut(&Vec<Point3>, usize) -> Vector6 {
+        solver.step(&mut self.points, f);
         self.update_barycenter()
             .update_trajectory()
     }
@@ -217,8 +175,8 @@ impl Cluster {
     #[inline]
     pub fn set_absolute(&mut self, origin: &geometry::point::Point3) -> &mut Self {
         self.barycenter.state += *origin;
-        for body in self.bodies.iter_mut() {
-            body.center.state += *origin;
+        for body in self.points.iter_mut() {
+            body.state += *origin;
         }
         self
     }
@@ -227,9 +185,9 @@ impl Cluster {
     pub fn set_relative(&mut self, origin: &geometry::point::Point3) -> &mut Self {
         self.barycenter.state -= *origin;
         *self.barycenter.state.trajectory.last_mut() -= *origin.trajectory.last();
-        for body in self.bodies.iter_mut() {
-            body.center.state -= *origin;
-            *body.center.state.trajectory.last_mut() -= *origin.trajectory.last();
+        for body in self.points.iter_mut() {
+            body.state -= *origin;
+            *body.state.trajectory.last_mut() -= *origin.trajectory.last();
         }
         self
     }
@@ -237,8 +195,8 @@ impl Cluster {
     #[inline]
     pub fn reset_origin(&mut self, origin: &geometry::point::Point3, old_origin: &geometry::point::Point3) -> &mut Self {
         self.barycenter.state.reset_origin(origin, old_origin);
-        for body in self.bodies.iter_mut() {
-            body.center.state.reset_origin(origin, old_origin);
+        for body in self.points.iter_mut() {
+            body.state.reset_origin(origin, old_origin);
         }
         self
     }
@@ -247,9 +205,9 @@ impl Cluster {
     pub fn update_barycenter(&mut self) -> &mut Self {
         self.barycenter.mass = 0.;
         self.barycenter.state.reset0();
-        for body in self.bodies.iter() {
-            self.barycenter.mass += body.center.mass;
-            self.barycenter.state += body.center.state * body.center.mass;
+        for body in self.points.iter() {
+            self.barycenter.mass += body.mass;
+            self.barycenter.state += body.state * body.mass;
         }
         self.barycenter.state /= self.barycenter.mass;
         self
@@ -258,8 +216,8 @@ impl Cluster {
     #[inline]
     pub fn reset_trajectory(&mut self) -> &mut Self {
         self.barycenter.state.trajectory.reset(&self.barycenter.state.position);
-        for body in self.bodies.iter_mut() {
-            body.center.state.trajectory.reset(&body.center.state.position);
+        for body in self.points.iter_mut() {
+            body.state.trajectory.reset(&body.state.position);
         }
         self
     }
@@ -267,8 +225,8 @@ impl Cluster {
     #[inline]
     fn update_trajectory(&mut self) -> &mut Self {
         self.barycenter.state.update_trajectory();
-        for body in self.bodies.iter_mut() {
-            body.center.state.update_trajectory();
+        for body in self.points.iter_mut() {
+            body.state.update_trajectory();
         }
         self
     }
@@ -278,25 +236,25 @@ impl Debug for Cluster {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut buffer = String::from("");
         buffer.push_str(format!("{:?}\n\n", self.barycenter.state).as_str());
-        for body in self.bodies.iter() {
-            buffer.push_str(format!("{:?}\n\n", body.center.state).as_str());
+        for body in self.points.iter() {
+            buffer.push_str(format!("{:?}\n\n", body.state).as_str());
         }
         write!(f, "{}", buffer)
     }
 }
 
 impl Index<usize> for Cluster {
-    type Output = Body;
+    type Output = Point3;
 
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
-        &self.bodies[index]
+        &self.points[index]
     }
 }
 
 impl IndexMut<usize> for Cluster {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.bodies[index]
+        &mut self.points[index]
     }
 }
