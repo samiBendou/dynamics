@@ -15,6 +15,42 @@ use crate::geometry::common::transforms;
 use crate::geometry::vector::*;
 use crate::impl_vector;
 
+pub trait Rows<T> where
+    Self: Initializer + std::marker::Sized {
+    fn from_rows(rows: &T) -> Self {
+        let mut ret = Self::zeros();
+        ret.set_rows(rows);
+        ret
+    }
+    fn rows(&self) -> T;
+    fn set_rows(&mut self, rows: &T) -> &mut Self;
+}
+
+pub trait Algebra<T> where
+    Self: std::marker::Sized + Copy + Clone,
+    T: std::marker::Sized + Copy + Clone {
+    fn eye() -> Self;
+    fn determinant(&self) -> f64;
+    fn inverse(&self) -> Self {
+        let mut ret = *self;
+        ret.set_inverse();
+        ret
+    }
+    fn transposed(&self) -> Self {
+        let mut ret = *self;
+        ret.set_transposed();
+        ret
+    }
+    fn adjugate(&self) -> Self {
+        let mut ret = *self;
+        ret.set_adjugate();
+        ret
+    }
+    fn set_inverse(&mut self) -> &mut Self;
+    fn set_transposed(&mut self) -> &mut Self;
+    fn set_adjugate(&mut self) -> &mut Self;
+}
+
 #[derive(Copy, Clone)]
 pub struct Matrix2 {
     pub xx: f64,
@@ -56,33 +92,104 @@ pub struct Matrix4 {
     pub ww: f64,
 }
 
+macro_rules! impl_debug_matrix {
+($MatrixN:ident) => {
+        impl Debug for $MatrixN {
+            fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+                let rows = self.rows();
+                let mut buffer = String::from("");
+                for row in rows.iter() {
+                    buffer += &format!("\n{:?}", row);
+                }
+                write!(f, "{}", buffer)
+            }
+        }
+    }
+}
+
 impl_vector!(Matrix2 {xx, xy, yx, yy}, 4);
 impl_vector!(Matrix3 {xx, xy, xz, yx, yy, yz, zx, zy, zz}, 9);
 impl_vector!(Matrix4 {xx, xy, xz, xw, yx, yy, yz, yw, zx, zy, zz, zw, wx, wy, wz, ww}, 16);
 
-pub trait Algebra<T> where
-    Self: std::marker::Sized + Copy + Clone,
-    T: std::marker::Sized + Copy + Clone {
-    fn eye() -> Self;
-    fn determinant(&self) -> f64;
-    fn inverse(&self) -> Self {
-        let mut ret = *self;
-        ret.set_inverse();
-        ret
+impl_debug_matrix!(Matrix2);
+impl_debug_matrix!(Matrix3);
+impl_debug_matrix!(Matrix4);
+
+impl Rows<[Vector2; 2]> for Matrix2 {
+    fn rows(&self) -> [Vector2; 2] {
+        [
+            Vector2::new(self.xx, self.xy),
+            Vector2::new(self.yx, self.yy)
+        ]
     }
-    fn transposed(&self) -> Self {
-        let mut ret = *self;
-        ret.set_transposed();
-        ret
+
+    fn set_rows(&mut self, rows: &[Vector2; 2]) -> &mut Self {
+        self.xx = rows[0].x;
+        self.xy = rows[0].y;
+
+        self.yx = rows[1].x;
+        self.yy = rows[1].y;
+        self
     }
-    fn adjugate(&self) -> Self {
-        let mut ret = *self;
-        ret.set_adjugate();
-        ret
+}
+
+impl Rows<[Vector3; 3]> for Matrix3 {
+    fn rows(&self) -> [Vector3; 3] {
+        [
+            Vector3::new(self.xx, self.xy, self.xz),
+            Vector3::new(self.yx, self.yy, self.yz),
+            Vector3::new(self.zx, self.zy, self.zz),
+        ]
     }
-    fn set_inverse(&mut self) -> &mut Self;
-    fn set_transposed(&mut self) -> &mut Self;
-    fn set_adjugate(&mut self) -> &mut Self;
+
+    fn set_rows(&mut self, rows: &[Vector3; 3]) -> &mut Self {
+        self.xx = rows[0].x;
+        self.xy = rows[0].y;
+        self.xz = rows[0].z;
+
+        self.yx = rows[1].x;
+        self.yy = rows[1].y;
+        self.yz = rows[1].z;
+
+        self.zx = rows[2].x;
+        self.zy = rows[2].y;
+        self.zz = rows[2].z;
+        self
+    }
+}
+
+impl Rows<[Vector4; 4]> for Matrix4 {
+    fn rows(&self) -> [Vector4; 4] {
+        [
+            Vector4::new(self.xx, self.xy, self.xz, self.xw),
+            Vector4::new(self.yx, self.yy, self.yz, self.yw),
+            Vector4::new(self.zx, self.zy, self.zz, self.zw),
+            Vector4::new(self.wx, self.wy, self.wz, self.ww),
+        ]
+    }
+
+    fn set_rows(&mut self, rows: &[Vector4; 4]) -> &mut Self {
+        self.xx = rows[0].x;
+        self.xy = rows[0].y;
+        self.xz = rows[0].z;
+        self.xw = rows[0].w;
+
+        self.yx = rows[1].x;
+        self.yy = rows[1].y;
+        self.yz = rows[1].z;
+        self.yw = rows[1].w;
+
+        self.zx = rows[2].x;
+        self.zy = rows[2].y;
+        self.zz = rows[2].z;
+        self.zw = rows[2].w;
+
+        self.wx = rows[3].x;
+        self.wy = rows[3].y;
+        self.wz = rows[3].z;
+        self.ww = rows[3].w;
+        self
+    }
 }
 
 impl Mul<Matrix2> for Matrix2 {

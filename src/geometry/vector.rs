@@ -130,19 +130,6 @@ macro_rules! impl_vector {
             }
         }
 
-        impl Debug for $VectorN {
-            fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-                let mut buffer = String::from("(");
-                if self.magnitude() > 1000. {
-                    $(buffer += format!(" {:.3e} ", self.$field).as_str();)+
-                } else {
-                    $(buffer += format!(" {:.3} ", self.$field).as_str();)+
-                }
-                buffer += ")";
-                write!(f, "{}", buffer)
-            }
-        }
-
         impl Metric for $VectorN {
 
             #[inline]
@@ -307,10 +294,32 @@ macro_rules! impl_vector {
     }
 }
 
+macro_rules! impl_debug_vector {
+($VectorN:ident { $($field:ident),+ }) => {
+        impl Debug for $VectorN {
+            fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+                let mut buffer = String::from("(");
+                if self.magnitude() > 1000. {
+                    $(buffer += format!(" {:.3e} ", self.$field).as_str();)+
+                } else {
+                    $(buffer += format!(" {:.3} ", self.$field).as_str();)+
+                }
+                buffer += ")";
+                write!(f, "{}", buffer)
+            }
+        }
+    }
+}
+
 impl_vector!(Vector2 {x, y}, 2);
 impl_vector!(Vector3 {x, y, z}, 3);
 impl_vector!(Vector4 {x, y, z, w}, 4);
 impl_vector!(Vector6 {x, y, z, u, v, w}, 6);
+
+impl_debug_vector!(Vector2 {x, y});
+impl_debug_vector!(Vector3 {x, y, z});
+impl_debug_vector!(Vector4 {x, y, z, w});
+impl_debug_vector!(Vector6 {x, y, z, u, v, w});
 
 impl MulAssign<Matrix2> for Vector2 {
     fn mul_assign(&mut self, rhs: Matrix2) {

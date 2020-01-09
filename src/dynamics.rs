@@ -18,8 +18,6 @@ pub mod potentials;
 pub mod orbital;
 pub mod solver;
 
-pub const SPEED_SCALING_FACTOR: f64 = 5e-7;
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Frame {
     Zero,
