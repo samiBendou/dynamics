@@ -47,6 +47,33 @@ pub trait Angle {
     fn cross(&self, _: &Self) -> Vector3;
 }
 
+pub trait Interpolation {
+    fn lerp(&self, other: &Self, s: f64) -> Self where
+        Self: Copy + Clone {
+        let mut ret = *self;
+        ret.set_lerp(other, s);
+        ret
+    }
+
+    fn herp(&mut self, other: &Self, other1: &Self, other2: &Self, s: f64) -> Self where
+        Self: Copy + Clone {
+        let mut ret = *self;
+        ret.set_herp(other, other1, other2, s);
+        ret
+    }
+
+    fn berp(&mut self, other: &Self, other1: &Self, other2: &Self, s: f64) -> Self where
+        Self: Copy + Clone {
+        let mut ret = *self;
+        ret.set_berp(other, other1, other2, s);
+        ret
+    }
+
+    fn set_lerp(&mut self, other: &Self, s: f64) -> &mut Self;
+    fn set_herp(&mut self, other: &Self, other1: &Self, other2: &Self, s: f64) -> &mut Self;
+    fn set_berp(&mut self, other: &Self, other1: &Self, other2: &Self, s: f64) -> &mut Self;
+}
+
 
 pub mod coordinates {
     pub trait Cartesian2 {
