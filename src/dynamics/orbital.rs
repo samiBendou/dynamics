@@ -101,12 +101,17 @@ impl Orbit {
         }
     }
 
-    pub fn interpolate_trajectory(&mut self, trajectory: &Trajectory3, center: &Vector3) -> &mut Self {
-        let magnitudes: Vec<f64> = trajectory.positions().iter().map(|position| position.distance(center)).collect();
-        let angles: Vec<f64> = trajectory.positions().iter().map(|position| (*position - *center).angle(&Vector3::unit_x())).collect();
+    pub fn interpolate_trajectory(&self, trajectory: &Trajectory3, center: &Vector3) -> &Self {
+        let position0 = trajectory[0] - *center;
+        let magnitudes: Vec<f64> = trajectory.positions().iter()
+            .map(|position| position.distance(center))
+            .collect();
+        let angles: Vec<f64> = trajectory.positions().iter()
+            .map(|position| (*position - *center).angle(&Vector3::unit_x()))
+            .collect();
+
         let mut max_indexes: Vec<usize> = Vec::new();
         let mut min_indexes: Vec<usize> = Vec::new();
-
         let mut max_magnitude = magnitudes[0];
         let mut min_magnitude = magnitudes[0];
         let mut sign = if angles[1] > angles[0] { true } else { false };
@@ -115,15 +120,16 @@ impl Orbit {
         max_indexes.push(0);
         min_indexes.push(0);
         for i in 1..TRAJECTORY_SIZE - 1 {
-            if max_magnitude > magnitudes[i] {
+            println!("r({:.3}) = {:.3e}", angles[i] * 180. / std::f64::consts::PI, magnitudes[i]);
+            if max_magnitude < magnitudes[i] {
                 max_magnitude = magnitudes[i];
                 max_indexes[index] = i;
             }
-            if min_magnitude < magnitudes[i] {
-                max_magnitude = magnitudes[i];
+            if min_magnitude > magnitudes[i] {
+                min_magnitude = magnitudes[i];
                 min_indexes[index] = i;
             }
-            if (angles[i] > angles[0]) != sign {
+            if (angles[i] > angles[i - 1]) != sign {
                 sign_changes += 1;
                 sign = !sign;
             }
@@ -143,9 +149,15 @@ impl Orbit {
             average_max_argument += angles[*index];
             average_max_magnitude += magnitudes[*index];
         }
-        average_max_argument /= TRAJECTORY_SIZE as f64;
-        average_max_magnitude /= TRAJECTORY_SIZE as f64;
-        println!("avg arg:{}\navg mag:{}", average_max_argument, average_max_magnitude);
+        average_max_argument /= max_indexes.len() as f64;
+        average_max_magnitude /= max_indexes.len() as f64;
+
+        let mut average = Vector3::zeros();
+        for i in 1..TRAJECTORY_SIZE - 1 {
+            average += trajectory[i];
+        }
+        average /= TRAJECTORY_SIZE as f64;
+        println!("avg arg:{:.2}, mag:{:.3e}", average_max_argument * 180. / std::f64::consts::PI, average_max_magnitude);
         self
     }
 
