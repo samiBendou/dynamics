@@ -66,22 +66,6 @@ impl Cluster {
         ret * 0.5
     }
 
-    /*
-    pub fn remove_aways(&mut self) -> &mut Self {
-        let (max_distance, max_index) = self.max_distance();
-        let (mean, deviation, _distances) = if self.points.len() < 3 {
-            self.stats_distance_without(None)
-        } else {
-            self.stats_distance_without(Some(max_index))
-        };
-        if max_distance > mean + 10e2 * deviation {
-            self.remove(max_index);
-            self.update_barycenter();
-        }
-        self
-    }
-    */
-
     pub fn push(&mut self, point: Point3) -> &mut Self {
         self.points.push(point);
         self.update_barycenter()
