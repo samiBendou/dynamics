@@ -66,43 +66,7 @@ impl Cluster {
         ret * 0.5
     }
 
-    pub fn max_distance(&self) -> (f64, usize) {
-        let mut max_distance = 0.;
-        let mut max_index: usize = 0;
-        let mut distance: f64;
-        let len = self.points.len();
-        for i in 0..len {
-            distance = self.points[i].state.distance(&self.barycenter.state);
-            if distance > max_distance {
-                max_distance = distance;
-                max_index = i;
-            }
-        }
-        (max_distance, max_index)
-    }
-
-    pub fn stats_distance_without(&self, index: Option<usize>) -> (f64, f64, Vec<f64>) {
-        let len = self.points.len();
-        let mut mean = 0.;
-        let mut sum2 = 0.;
-        let mut distances: Vec<f64> = Vec::with_capacity(len);
-        let index = match index {
-            None => len,
-            Some(index) => index,
-        };
-        for i in 0..len {
-            distances.push(self.points[i].state.distance(&self.barycenter.state));
-            if i == index {
-                continue;
-            }
-            mean += distances[i];
-            sum2 += distances[i] * distances[i];
-        }
-        let len = len as f64;
-        mean /= len;
-        (mean, (sum2 / len - mean * mean).sqrt(), distances)
-    }
-
+    /*
     pub fn remove_aways(&mut self) -> &mut Self {
         let (max_distance, max_index) = self.max_distance();
         let (mean, deviation, _distances) = if self.points.len() < 3 {
@@ -116,6 +80,7 @@ impl Cluster {
         }
         self
     }
+    */
 
     pub fn push(&mut self, point: Point3) -> &mut Self {
         self.points.push(point);
