@@ -1,13 +1,16 @@
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
+use std::ops::{Index, IndexMut};
 use std::path::Path;
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::common::random_color;
 use crate::geometry::common::*;
-use crate::geometry::common::coordinates::Spherical;
+use crate::geometry::common::coordinates::{Cartesian2, Spherical};
+use crate::geometry::trajectory::{Trajectory3, TRAJECTORY_SIZE};
 use crate::geometry::vector::Vector3;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
@@ -72,6 +75,12 @@ pub struct Inclination {
     pub argument: f64,
 }
 
+impl Inclination {
+    pub fn zeros() -> Self {
+        Inclination { value: 0.0, argument: 0.0 }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub struct Orbit {
     pub mu: f64,
@@ -82,6 +91,64 @@ pub struct Orbit {
 }
 
 impl Orbit {
+    pub fn zeros() -> Self {
+        Orbit {
+            mu: 0.0,
+            apoapsis: 0.0,
+            periapsis: 0.0,
+            argument: 0.0,
+            inclination: Inclination::zeros(),
+        }
+    }
+
+    pub fn interpolate_trajectory(&mut self, trajectory: &Trajectory3, center: &Vector3) -> &mut Self {
+        let magnitudes: Vec<f64> = trajectory.positions().iter().map(|position| position.distance(center)).collect();
+        let angles: Vec<f64> = trajectory.positions().iter().map(|position| (*position - *center).angle(&Vector3::unit_x())).collect();
+        let mut max_indexes: Vec<usize> = Vec::new();
+        let mut min_indexes: Vec<usize> = Vec::new();
+
+        let mut max_magnitude = magnitudes[0];
+        let mut min_magnitude = magnitudes[0];
+        let mut sign = if angles[1] > angles[0] { true } else { false };
+        let mut sign_changes = 0;
+        let mut index = 0;
+        max_indexes.push(0);
+        min_indexes.push(0);
+        for i in 1..TRAJECTORY_SIZE - 1 {
+            if max_magnitude > magnitudes[i] {
+                max_magnitude = magnitudes[i];
+                max_indexes[index] = i;
+            }
+            if min_magnitude < magnitudes[i] {
+                max_magnitude = magnitudes[i];
+                min_indexes[index] = i;
+            }
+            if (angles[i] > angles[0]) != sign {
+                sign_changes += 1;
+                sign = !sign;
+            }
+
+            if sign_changes == 2 {
+                max_indexes.push(0);
+                min_indexes.push(0);
+                max_magnitude = 0.;
+                min_magnitude = std::f64::INFINITY;
+                index += 1;
+                sign_changes = 0;
+            }
+        }
+        let mut average_max_argument = 0.;
+        let mut average_max_magnitude = 0.;
+        for index in max_indexes.iter() {
+            average_max_argument += angles[*index];
+            average_max_magnitude += magnitudes[*index];
+        }
+        average_max_argument /= TRAJECTORY_SIZE as f64;
+        average_max_magnitude /= TRAJECTORY_SIZE as f64;
+        println!("avg arg:{}\navg mag:{}", average_max_argument, average_max_magnitude);
+        self
+    }
+
     pub fn semi_minor(&self) -> f64 {
         (self.apoapsis * self.periapsis).sqrt()
     }
@@ -160,9 +227,44 @@ pub struct Body {
     pub orbit: Orbit,
 }
 
+impl Body {
+    pub fn new() -> Self {
+        Body {
+            name: "untitled".to_string(),
+            mass: 1.0,
+            kind: Kind::Artificial,
+            color: [1., 0., 0., 1.],
+            radius: 1e5,
+            orbit: Orbit::zeros(),
+        }
+    }
+
+    pub fn random() -> Self {
+        let mut rng = rand::thread_rng();
+        let kind = Kind::random();
+        let mass = kind.random_mass();
+        let radius = kind.random_radius();
+        let id = rng.gen_range(0, std::i32::MAX);
+        Body {
+            name: format!("{:#?}-{}", kind, id),
+            mass,
+            kind,
+            color: random_color(),
+            radius,
+            orbit: Orbit::zeros(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Cluster {
     pub bodies: Vec<Body>
+}
+
+impl From<Vec<Body>> for Cluster {
+    fn from(bodies: Vec<Body>) -> Self {
+        Cluster { bodies }
+    }
 }
 
 impl Cluster {
@@ -171,7 +273,38 @@ impl Cluster {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let bodies: Vec<Body> = serde_json::from_str(&contents)?;
-        Ok(Cluster { bodies })
+        Ok(Cluster::from(bodies))
+    }
+
+    #[inline]
+    pub fn push(&mut self, body: Body) -> &mut Self {
+        self.bodies.push(body);
+        self
+    }
+
+    #[inline]
+    pub fn pop(&mut self) -> Option<Body> {
+        self.bodies.pop()
+    }
+
+    #[inline]
+    pub fn remove(&mut self, i: usize) -> Body {
+        self.bodies.remove(i)
+    }
+}
+
+impl Index<usize> for Cluster {
+    type Output = Body;
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.bodies[index]
+    }
+}
+
+impl IndexMut<usize> for Cluster {
+    #[inline]
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.bodies[index]
     }
 }
 
