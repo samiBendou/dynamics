@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::Debug;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
 use crate::geometry::common::{Initializer, Reset};
 use crate::geometry::vector::{Vector2, Vector3, Vector4};
@@ -9,7 +9,7 @@ pub type Trajectory2 = Trajectory<Vector2>;
 pub type Trajectory3 = Trajectory<Vector3>;
 pub type Trajectory4 = Trajectory<Vector4>;
 
-pub const TRAJECTORY_SIZE: usize = 256;
+pub const TRAJECTORY_SIZE: usize = 16;
 pub const ZERO: Trajectory3 = Trajectory3 {
     positions: [Vector3 { x: 0., y: 0., z: 0. }; TRAJECTORY_SIZE],
     index: 0,
@@ -48,6 +48,9 @@ impl<T> Trajectory<T> where
         self.positions[self.index] = *position;
         self.index = self.index_offset(0);
     }
+
+    #[inline]
+    pub fn positions(&self) -> &[T; TRAJECTORY_SIZE] { &self.positions }
 
     #[inline]
     pub fn position(&self, i: usize) -> &T {
@@ -127,7 +130,6 @@ impl<T> Debug for Trajectory<T> where
 impl<T> Add<Trajectory<T>> for Trajectory<T> where
     T: AddAssign<T> + Copy + Clone {
     type Output = Trajectory<T>;
-
     #[inline]
     fn add(self, rhs: Trajectory<T>) -> Self::Output {
         let mut ret = self;
@@ -139,7 +141,6 @@ impl<T> Add<Trajectory<T>> for Trajectory<T> where
 impl<T> Add<T> for Trajectory<T> where
     T: AddAssign<T> + Copy + Clone {
     type Output = Trajectory<T>;
-
     #[inline]
     fn add(self, rhs: T) -> Self::Output {
         let mut ret = self;
@@ -171,7 +172,6 @@ impl<T> AddAssign<T> for Trajectory<T> where
 impl<T> Sub<Trajectory<T>> for Trajectory<T> where
     T: SubAssign<T> + Copy + Clone {
     type Output = Trajectory<T>;
-
     #[inline]
     fn sub(self, rhs: Trajectory<T>) -> Self::Output {
         let mut ret = self;
@@ -183,7 +183,6 @@ impl<T> Sub<Trajectory<T>> for Trajectory<T> where
 impl<T> Sub<T> for Trajectory<T> where
     T: SubAssign<T> + Copy + Clone {
     type Output = Trajectory<T>;
-
     #[inline]
     fn sub(self, rhs: T) -> Self::Output {
         let mut ret = self;
@@ -215,7 +214,6 @@ impl<T> SubAssign<T> for Trajectory<T> where
 impl<T> Mul<f64> for Trajectory<T> where
     T: MulAssign<f64> + Copy + Clone {
     type Output = Trajectory<T>;
-
     #[inline]
     fn mul(self, rhs: f64) -> Self::Output {
         let mut ret = self;
@@ -237,7 +235,6 @@ impl<T> MulAssign<f64> for Trajectory<T> where
 impl<T> Div<f64> for Trajectory<T> where
     T: DivAssign<f64> + Copy + Clone {
     type Output = Trajectory<T>;
-
     #[inline]
     fn div(self, rhs: f64) -> Self::Output {
         let mut ret = self;
@@ -253,5 +250,22 @@ impl<T> DivAssign<f64> for Trajectory<T> where
         for i in 0..TRAJECTORY_SIZE {
             self.positions[i] /= rhs;
         }
+    }
+}
+
+impl<T> Index<usize> for Trajectory<T> where
+    T: Copy + Clone {
+    type Output = T;
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.positions[self.index_offset(index)]
+    }
+}
+
+impl<T> IndexMut<usize> for Trajectory<T> where
+    T: Copy + Clone {
+    #[inline]
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.positions[self.index_offset(index)]
     }
 }
