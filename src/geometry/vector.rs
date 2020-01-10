@@ -291,8 +291,38 @@ macro_rules! impl_vector {
                 $(self.$field /= rhs;)+
             }
         }
+
+        impl Interpolation for $VectorN {
+            fn set_lerp(&mut self, other: &Self, s: f64) -> &mut Self {
+                $(self.$field += (other.$field - self.$field) * s;)+
+                self
+            }
+
+            fn set_herp(&mut self, other: &Self, other1: &Self, other2: &Self, s: f64) -> &mut Self {
+                let s2 = s * s;
+                let t0 = s2 * (2. * s - 3.) + 1.;
+                let t1 = s2 * (s - 2.) + s;
+                let t2 = s2 * (s - 1.);
+                let t3 = s2 * (3. - 2. * s);
+                $(self.$field = self.$field * t0 + other1.$field * t1 + other2.$field * t2 + other.$field * t3;)+
+                self
+            }
+
+            fn set_berp(&mut self, other: &Self, other1: &Self, other2: &Self, s: f64) -> &mut Self {
+                let s2 = s * s;
+                let inv = 1. - s;
+                let inv2 = inv * inv;
+                let t0 = inv2 * inv;
+                let t1 = 3. * s * inv2;
+                let t2 = 3. * s2 * inv;
+                let t3 = s2 * s;
+                $(self.$field = self.$field * t0 + other1.$field * t1 + other2.$field * t2 + other.$field * t3;)+
+                self
+            }
+        }
     }
 }
+
 
 macro_rules! impl_debug_vector {
 ($VectorN:ident { $($field:ident),+ }) => {
