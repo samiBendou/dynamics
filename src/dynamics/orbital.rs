@@ -8,10 +8,12 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::common::random_color;
+use crate::dynamics::point::Point3;
 use crate::geometry::common::*;
-use crate::geometry::common::coordinates::{Cartesian2, Spherical};
+use crate::geometry::common::coordinates::{Cartesian2, Cartesian3, Spherical};
 use crate::geometry::trajectory::{Trajectory3, TRAJECTORY_SIZE};
 use crate::geometry::vector::Vector3;
+use crate::units::consts::G_UNIV;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
@@ -101,63 +103,67 @@ impl Orbit {
         }
     }
 
-    pub fn interpolate_trajectory(&self, trajectory: &Trajectory3, center: &Vector3) -> &Self {
-        let position0 = trajectory[0] - *center;
-        let magnitudes: Vec<f64> = trajectory.positions().iter()
-            .map(|position| position.distance(center))
-            .collect();
-        let angles: Vec<f64> = trajectory.positions().iter()
-            .map(|position| (*position - *center).angle(&Vector3::unit_x()))
-            .collect();
-
-        let mut max_indexes: Vec<usize> = Vec::new();
-        let mut min_indexes: Vec<usize> = Vec::new();
-        let mut max_magnitude = magnitudes[0];
-        let mut min_magnitude = magnitudes[0];
+    pub fn interpolate<T>(&self, values: &Vec<f64>, angles: &Vec<f64>, mut f: T) -> (f64, f64) where
+        T: FnMut(f64, f64) -> bool {
+        let mut value = values[0];
+        let mut indexes: Vec<usize> = Vec::new();
         let mut sign = if angles[1] > angles[0] { true } else { false };
         let mut sign_changes = 0;
         let mut index = 0;
-        max_indexes.push(0);
-        min_indexes.push(0);
+        indexes.push(0);
         for i in 1..TRAJECTORY_SIZE - 1 {
-            println!("r({:.3}) = {:.3e}", angles[i] * 180. / std::f64::consts::PI, magnitudes[i]);
-            if max_magnitude < magnitudes[i] {
-                max_magnitude = magnitudes[i];
-                max_indexes[index] = i;
-            }
-            if min_magnitude > magnitudes[i] {
-                min_magnitude = magnitudes[i];
-                min_indexes[index] = i;
+            if f(value, values[i]) {
+                value = values[i];
+                indexes[index] = i;
             }
             if (angles[i] > angles[i - 1]) != sign {
                 sign_changes += 1;
                 sign = !sign;
             }
-
             if sign_changes == 2 {
-                max_indexes.push(0);
-                min_indexes.push(0);
-                max_magnitude = 0.;
-                min_magnitude = std::f64::INFINITY;
+                indexes.push(0);
+                value = values[i];
                 index += 1;
                 sign_changes = 0;
             }
         }
-        let mut average_max_argument = 0.;
-        let mut average_max_magnitude = 0.;
-        for index in max_indexes.iter() {
-            average_max_argument += angles[*index];
-            average_max_magnitude += magnitudes[*index];
+        let len = indexes.len() as f64;
+        let mut avg_argument = 0.;
+        let mut avg_value = 0.;
+        for index in indexes.iter() {
+            avg_argument += angles[*index];
+            avg_value += values[*index];
         }
-        average_max_argument /= max_indexes.len() as f64;
-        average_max_magnitude /= max_indexes.len() as f64;
+        (avg_argument / len, avg_value / len)
+    }
 
-        let mut average = Vector3::zeros();
-        for i in 1..TRAJECTORY_SIZE - 1 {
-            average += trajectory[i];
-        }
-        average /= TRAJECTORY_SIZE as f64;
-        println!("avg arg:{:.2}, mag:{:.3e}", average_max_argument * 180. / std::f64::consts::PI, average_max_magnitude);
+    pub fn set_interpolation(&mut self, trajectory: &Trajectory3, barycenter: &Point3) -> &Self {
+        let rad_to_deg = 180. / std::f64::consts::PI;
+
+        let mut position0 = (trajectory[1] - trajectory[0])
+            .cross(&(trajectory[0] - barycenter.state.position))
+            .cross(&Vector3::unit_y());
+        position0.normalize();
+        let distances: Vec<f64> = trajectory.positions().iter()
+            .map(|position| *position % barycenter.state.position)
+            .collect();
+        let anomalies: Vec<f64> = trajectory.positions().iter()
+            .map(|position| (*position - barycenter.state.position).angle(&position0))
+            .collect();
+        let inclinations: Vec<f64> = trajectory.positions().iter()
+            .map(|position| (*position - barycenter.state.position).angle(&Vector3::unit_z()))
+            .collect();
+        let (max_argument, max_magnitude) = self.interpolate(&distances, &anomalies, |rhs, lhs| rhs < lhs);
+        let (min_argument, min_magnitude) = self.interpolate(&distances, &anomalies, |rhs, lhs| rhs > lhs);
+        let (asc_argument, asc_inclination) = self.interpolate(&inclinations, &anomalies, |rhs, lhs| rhs > lhs);
+        let (dsc_argument, dsc_inclination) = self.interpolate(&inclinations, &anomalies, |rhs, lhs| rhs < lhs);
+
+        self.argument = max_argument * rad_to_deg;
+        self.apoapsis = max_magnitude;
+        self.periapsis = min_magnitude;
+        self.inclination.argument = (asc_argument - std::f64::consts::FRAC_PI_2) * rad_to_deg;
+        self.inclination.value = asc_inclination * rad_to_deg;
+        self.mu = G_UNIV * barycenter.mass;
         self
     }
 
@@ -256,7 +262,7 @@ impl Body {
         let kind = Kind::random();
         let mass = kind.random_mass();
         let radius = kind.random_radius();
-        let id = rng.gen_range(0, std::i32::MAX);
+        let id = rng.gen_range(0, std::i16::MAX);
         Body {
             name: format!("{:#?}-{}", kind, id),
             mass,
@@ -286,6 +292,13 @@ impl Cluster {
         file.read_to_string(&mut contents)?;
         let bodies: Vec<Body> = serde_json::from_str(&contents)?;
         Ok(Cluster::from(bodies))
+    }
+
+    pub fn update_orbits(&mut self, points: &Vec<Point3>, barycenter: &Point3) -> &mut Self {
+        for i in 0..points.len() {
+            self.bodies[i].orbit.set_interpolation(&points[i].state.trajectory, barycenter);
+        }
+        self
     }
 
     #[inline]

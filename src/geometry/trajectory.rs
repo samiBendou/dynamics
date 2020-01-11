@@ -9,7 +9,7 @@ pub type Trajectory2 = Trajectory<Vector2>;
 pub type Trajectory3 = Trajectory<Vector3>;
 pub type Trajectory4 = Trajectory<Vector4>;
 
-pub const TRAJECTORY_SIZE: usize = 256;
+pub const TRAJECTORY_SIZE: usize = 512;
 pub const ZERO: Trajectory3 = Trajectory3 {
     positions: [Vector3 { x: 0., y: 0., z: 0. }; TRAJECTORY_SIZE],
     index: 0,
