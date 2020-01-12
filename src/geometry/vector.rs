@@ -1007,6 +1007,24 @@ mod tests {
         }
 
         #[test]
+        fn angles() {
+            let angle = std::f64::consts::FRAC_PI_4;
+            let u = Vector3::unit_x();
+            let mut v = u;
+
+            assert_eq!(u.angle(&v), 0.);
+            v.set_rotation_z(angle);
+            assert_near!(u.angle(&v), angle, std::f64::EPSILON);
+            assert_near!(v.angle(&u), angle, std::f64::EPSILON);
+            v.set_rotation_z(angle);
+            assert_eq!(u.angle(&v), 2. * angle);
+            v.set_rotation_z(angle);
+            assert_eq!(u.angle(&v), 3. * angle);
+            v.set_rotation_z(angle);
+            assert_eq!(u.angle(&v), 4. * angle);
+        }
+
+        #[test]
         fn rotations_xyz() {
             let angle = std::f64::consts::FRAC_PI_2;
             let mut u = Vector3::unit_x();

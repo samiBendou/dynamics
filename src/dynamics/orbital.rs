@@ -7,10 +7,12 @@ use std::path::Path;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::common::random_color;
+use crate::common::{Average, random_color};
 use crate::dynamics::point::Point3;
 use crate::geometry::common::*;
-use crate::geometry::common::coordinates::{Cartesian2, Cartesian3, Spherical};
+use crate::geometry::common::coordinates::{Cartesian2, Cartesian3, Polar};
+use crate::geometry::common::transforms::Rotation3;
+use crate::geometry::matrix::Matrix3;
 use crate::geometry::trajectory::{Trajectory3, TRAJECTORY_SIZE};
 use crate::geometry::vector::Vector3;
 use crate::units::consts::G_UNIV;
@@ -71,24 +73,24 @@ impl Kind {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Inclination {
-    pub value: f64,
-    pub argument: f64,
+    pub value: Average<f64>,
+    pub argument: Average<f64>,
 }
 
 impl Inclination {
     pub fn zeros() -> Self {
-        Inclination { value: 0.0, argument: 0.0 }
+        Inclination { value: Average::new(&0.0), argument: Average::new(&0.0) }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Orbit {
     pub mu: f64,
-    pub apoapsis: f64,
-    pub periapsis: f64,
-    pub argument: f64,
+    pub apoapsis: Average<f64>,
+    pub periapsis: Average<f64>,
+    pub argument: Average<f64>,
     pub inclination: Inclination,
 }
 
@@ -96,83 +98,60 @@ impl Orbit {
     pub fn zeros() -> Self {
         Orbit {
             mu: 0.0,
-            apoapsis: 0.0,
-            periapsis: 0.0,
-            argument: 0.0,
+            apoapsis: Average::new(&0.0),
+            periapsis: Average::new(&0.0),
+            argument: Average::new(&0.0),
             inclination: Inclination::zeros(),
         }
     }
 
-    pub fn interpolate<T>(&self, values: &Vec<f64>, angles: &Vec<f64>, mut f: T) -> (f64, f64) where
-        T: FnMut(f64, f64) -> bool {
-        let mut value = values[0];
-        let mut indexes: Vec<usize> = Vec::new();
-        let mut sign = if angles[1] > angles[0] { true } else { false };
-        let mut sign_changes = 0;
-        let mut index = 0;
-        indexes.push(0);
-        for i in 1..TRAJECTORY_SIZE - 1 {
-            if f(value, values[i]) {
-                value = values[i];
-                indexes[index] = i;
-            }
-            if (angles[i] > angles[i - 1]) != sign {
-                sign_changes += 1;
-                sign = !sign;
-            }
-            if sign_changes == 2 {
-                indexes.push(0);
-                value = values[i];
-                index += 1;
-                sign_changes = 0;
-            }
-        }
-        let len = indexes.len() as f64;
-        let mut avg_argument = 0.;
-        let mut avg_value = 0.;
-        for index in indexes.iter() {
-            avg_argument += angles[*index];
-            avg_value += values[*index];
-        }
-        (avg_argument / len, avg_value / len)
-    }
-
     pub fn set_interpolation(&mut self, trajectory: &Trajectory3, barycenter: &Point3) -> &Self {
         let rad_to_deg = 180. / std::f64::consts::PI;
-
-        let mut position0 = (trajectory[1] - trajectory[0])
-            .cross(&(trajectory[0] - barycenter.state.position))
-            .cross(&Vector3::unit_y());
-        position0.normalize();
-        let distances: Vec<f64> = trajectory.positions().iter()
-            .map(|position| *position % barycenter.state.position)
-            .collect();
-        let anomalies: Vec<f64> = trajectory.positions().iter()
-            .map(|position| (*position - barycenter.state.position).angle(&position0))
-            .collect();
-        let inclinations: Vec<f64> = trajectory.positions().iter()
-            .map(|position| (*position - barycenter.state.position).angle(&Vector3::unit_z()))
-            .collect();
-        let (max_argument, max_magnitude) = self.interpolate(&distances, &anomalies, |rhs, lhs| rhs < lhs);
+        let pi_frac_2 = std::f64::consts::FRAC_PI_2;
+        let last_index = TRAJECTORY_SIZE - 1;
+        let mut normal0 = (trajectory[last_index] - trajectory[last_index - 1])
+            .cross(&(trajectory[last_index] - barycenter.state.trajectory[last_index]));
+        normal0.normalize();
+        let position0 = normal0.cross(&Vector3::unit_y());
+        if normal0.magnitude() < std::f64::EPSILON {
+            return self;
+        }
+        let mut distances: Vec<f64> = Vec::with_capacity(TRAJECTORY_SIZE);
+        let mut anomalies: Vec<f64> = Vec::with_capacity(TRAJECTORY_SIZE);
+        let mut inclinations: Vec<f64> = Vec::with_capacity(TRAJECTORY_SIZE);
+        let mut position: Vector3;
+        let mut normal: Vector3;
+        for i in 0..TRAJECTORY_SIZE {
+            position = trajectory[i] - barycenter.state.trajectory[i];
+            normal = position.cross(&position0);
+            normal.normalize();
+            inclinations.push(position.angle(&Vector3::unit_z()));
+            distances.push(position.magnitude());
+            if normal | normal0 > 0. {
+                anomalies.push(position.angle(&position0));
+            } else {
+                anomalies.push(2. * std::f64::consts::PI - position.angle(&position0));
+            }
+        }
+        let (_, max_magnitude) = self.interpolate(&distances, &anomalies, |rhs, lhs| rhs < lhs);
         let (min_argument, min_magnitude) = self.interpolate(&distances, &anomalies, |rhs, lhs| rhs > lhs);
         let (asc_argument, asc_inclination) = self.interpolate(&inclinations, &anomalies, |rhs, lhs| rhs > lhs);
-        let (dsc_argument, dsc_inclination) = self.interpolate(&inclinations, &anomalies, |rhs, lhs| rhs < lhs);
 
-        self.argument = max_argument * rad_to_deg;
-        self.apoapsis = max_magnitude;
-        self.periapsis = min_magnitude;
-        self.inclination.argument = (asc_argument - std::f64::consts::FRAC_PI_2) * rad_to_deg;
-        self.inclination.value = asc_inclination * rad_to_deg;
+        self.argument.push(&((min_argument) * rad_to_deg));
+        self.apoapsis.push(&max_magnitude);
+        self.periapsis.push(&min_magnitude);
+        self.inclination.argument.push(&((asc_argument - pi_frac_2) * rad_to_deg));
+        self.inclination.value.push(&((pi_frac_2 - asc_inclination) * rad_to_deg));
         self.mu = G_UNIV * barycenter.mass;
         self
     }
 
     pub fn semi_minor(&self) -> f64 {
-        (self.apoapsis * self.periapsis).sqrt()
+        (self.apoapsis.get() * self.periapsis.get()).sqrt()
     }
 
     pub fn semi_major(&self) -> f64 {
-        0.5 * (self.apoapsis + self.periapsis)
+        0.5 * (self.apoapsis.get() + self.periapsis.get())
     }
 
     pub fn is_degenerated(&self) -> bool {
@@ -185,8 +164,8 @@ impl Orbit {
     }
 
     pub fn eccentricity(&self) -> f64 {
-        let ra = self.apoapsis;
-        let rp = self.periapsis;
+        let ra = self.apoapsis.get();
+        let rp = self.periapsis.get();
         let total_r = ra + rp;
         if total_r > 0. {
             (ra - rp) / total_r
@@ -213,12 +192,13 @@ impl Orbit {
     }
 
     pub fn position_at(&self, true_anomaly: f64) -> Vector3 {
-        let pi_frac_2 = std::f64::consts::FRAC_PI_2;
-        let argument = self.inclination.argument * std::f64::consts::PI / 180.;
-        let value = self.inclination.value * std::f64::consts::PI / 180.;
+        let rad_to_deg = std::f64::consts::PI / 180.;
+        let argument = *self.inclination.argument.get() * rad_to_deg;
+        let value = *self.inclination.value.get() * rad_to_deg;
         let mag = self.radius_at(true_anomaly);
-        let theta = pi_frac_2 - value * (true_anomaly - argument) / pi_frac_2;
-        Vector3::from_spherical(mag, true_anomaly + self.argument, theta)
+        let rotation_node = Matrix3::from_rotation(value, Vector3::unit_x().set_rotation_z(argument));
+        let rotation_z = Matrix3::from_rotation_z(*self.argument.get() * rad_to_deg);
+        rotation_node * (rotation_z * Vector3::from_polar(mag, true_anomaly))
     }
 
     pub fn speed_at(&self, true_anomaly: f64) -> Vector3 {
@@ -226,16 +206,34 @@ impl Orbit {
             return Vector3::zeros();
         }
         let pi_frac_2 = std::f64::consts::FRAC_PI_2;
-        let argument = self.inclination.argument * std::f64::consts::PI / 180.;
-        let value = self.inclination.value * std::f64::consts::PI / 180.;
+        let rad_to_deg = std::f64::consts::PI / 180.;
+        let argument = *self.inclination.argument.get() * rad_to_deg;
+        let value = *self.inclination.value.get() * rad_to_deg;
         let mag = (self.mu * (2. / self.radius_at(true_anomaly) - 1. / self.semi_major())).sqrt();
-        let phi = true_anomaly + std::f64::consts::FRAC_PI_2 - self.flight_angle_at(true_anomaly);
-        let theta = pi_frac_2 - value * (1. - (true_anomaly - argument) / pi_frac_2);
-        Vector3::from_spherical(mag, phi + self.argument, theta)
+        let phi = true_anomaly + pi_frac_2 - self.flight_angle_at(true_anomaly);
+        let rotation_node = Matrix3::from_rotation(value, Vector3::unit_x().set_rotation_z(argument));
+        let rotation_z = Matrix3::from_rotation_z(*self.argument.get() * rad_to_deg);
+        rotation_node * (rotation_z * Vector3::from_polar(mag, phi))
+    }
+
+    fn interpolate<T>(&self, values: &Vec<f64>, angles: &Vec<f64>, mut f: T) -> (f64, f64) where
+        T: FnMut(f64, f64) -> bool {
+        let mut value = values[0];
+        let mut index = 0;
+        for i in 1..TRAJECTORY_SIZE - 1 {
+            if angles[i] == std::f64::NAN {
+                continue;
+            }
+            if f(value, values[i]) {
+                value = values[i];
+                index = i;
+            }
+        }
+        (angles[index], values[index])
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Body {
     pub name: String,
     pub mass: f64,

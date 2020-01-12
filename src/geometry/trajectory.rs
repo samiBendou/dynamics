@@ -9,7 +9,7 @@ pub type Trajectory2 = Trajectory<Vector2>;
 pub type Trajectory3 = Trajectory<Vector3>;
 pub type Trajectory4 = Trajectory<Vector4>;
 
-pub const TRAJECTORY_SIZE: usize = 512;
+pub const TRAJECTORY_SIZE: usize = 256;
 pub const ZERO: Trajectory3 = Trajectory3 {
     positions: [Vector3 { x: 0., y: 0., z: 0. }; TRAJECTORY_SIZE],
     index: 0,
@@ -46,7 +46,7 @@ impl<T> Trajectory<T> where
     #[inline]
     pub fn push(&mut self, position: &T) {
         self.positions[self.index] = *position;
-        self.index = self.index_offset(0);
+        self.index = self.index_offset(1);
     }
 
     #[inline]
@@ -63,16 +63,16 @@ impl<T> Trajectory<T> where
     }
 
     pub fn last(&self) -> &T {
-        &self.positions[self.index_offset(TRAJECTORY_SIZE - 2)]
+        &self.positions[self.index_offset(TRAJECTORY_SIZE - 1)]
     }
 
     pub fn last_mut(&mut self) -> &mut T {
-        &mut self.positions[self.index_offset(TRAJECTORY_SIZE - 2)]
+        &mut self.positions[self.index_offset(TRAJECTORY_SIZE - 1)]
     }
 
     #[inline]
     fn index_offset(&self, i: usize) -> usize {
-        (i + self.index + 1) % TRAJECTORY_SIZE
+        (i + self.index) % TRAJECTORY_SIZE
     }
 }
 
@@ -120,7 +120,7 @@ impl<T> Debug for Trajectory<T> where
     T: Debug + Copy + Clone {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let mut buffer = String::new();
-        for i in (TRAJECTORY_SIZE - 32)..TRAJECTORY_SIZE {
+        for i in TRAJECTORY_SIZE - 32..TRAJECTORY_SIZE {
             buffer += format!("\n{:?}", self.positions[self.index_offset(i)]).as_str();
         }
         write!(f, "{}", buffer)
