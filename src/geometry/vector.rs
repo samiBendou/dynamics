@@ -385,61 +385,26 @@ impl MulAssign<Matrix4> for Vector4 {
 }
 
 impl Angle for Vector2 {
-    #[inline]
-    fn cos(&self, rhs: &Self) -> f64 {
-        self.dot(rhs) / (self.magnitude() * rhs.magnitude())
-    }
-
-    #[inline]
-    fn sin(&self, rhs: &Self) -> f64 {
-        self.area(rhs) / (self.magnitude() * rhs.magnitude())
-    }
-
-    //noinspection RsTypeCheck
-    #[inline]
-    fn angle(&self, rhs: &Self) -> f64 {
-        self.cos(rhs).acos()
-    }
-
-    #[inline]
     fn area(&self, rhs: &Self) -> f64 {
         self.x * rhs.y - self.y * rhs.x
-    }
-
-    #[inline]
-    fn cross(&self, rhs: &Self) -> Vector3 {
-        Vector3::new(0., 0., self.area(rhs))
     }
 }
 
 impl Angle for Vector3 {
-    #[inline]
-    fn cos(&self, rhs: &Self) -> f64 {
-        self.dot(rhs) / (self.magnitude() * rhs.magnitude())
-    }
-
-    #[inline]
-    fn sin(&self, rhs: &Self) -> f64 {
-        self.area(rhs) / (self.magnitude() * rhs.magnitude())
-    }
-
-    //noinspection RsTypeCheck
-    #[inline]
-    fn angle(&self, rhs: &Self) -> f64 {
-        self.cos(rhs).acos()
-    }
-
-    #[inline]
     fn area(&self, rhs: &Self) -> f64 {
-        self.cross(rhs).magnitude()
+        self.cross().magnitude()
     }
+}
 
-    #[inline]
-    fn cross(&self, rhs: &Self) -> Vector3 {
-        let x = self.y * rhs.z - self.z * rhs.y;
-        let y = self.z * rhs.x - self.x * rhs.z;
-        let z = self.x * rhs.y - self.y * rhs.x;
-        Vector3::new(x, y, z)
+impl Cross for Vector3 {
+    fn set_cross(&mut self, rhs: &Self) -> &mut Self {
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
+        self.x = y * rhs.z - z * rhs.y;
+        self.y = z * rhs.x - x * rhs.z;
+        self.z = x * rhs.y - y * rhs.x;
+        self
     }
 }
 
