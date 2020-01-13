@@ -27,9 +27,9 @@ For example you can represent a particle that follows an electromagnetic or grav
 You can represent complex springs systems or whatever idea you have
 
 ### Usage
-API is made to be very straightforward, it's built using [geomath](https://github.com/samiBendou/nbodies) framework.
-For now since geomath is not yet on crates.io you need to bind the two frameworks manually. You can do so just by cloning
-geomath and putting it's root directory at the place dynamics's root directory is located.
+API is made to be very straightforward, it's built using [geomath](https://github.com/samiBendou/geomath) framework.
+For now since geomath is not yet on crates.io you need to bind the two frameworks manually. 
+You can do so by opening your Cargo.toml and bind the frameworks using the following syntax `package={path="path/to/repo"}`
 ```rust
 let position = geomath::Vector3::zeros(); // set initial position
 let speed = geomath::Vector3::ones(); // set initial speed
