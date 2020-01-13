@@ -1,0 +1,1 @@
+pub const G_UNIV: f64 = 6.67430e-11;
