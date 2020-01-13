@@ -109,9 +109,9 @@ impl Orbit {
         let rad_to_deg = 180. / std::f64::consts::PI;
         let pi_frac_2 = std::f64::consts::FRAC_PI_2;
         let last_index = TRAJECTORY_SIZE - 1;
-        let mut normal0 = (trajectory[last_index] - trajectory[last_index - 1])
-            .cross(&(trajectory[last_index] - barycenter.state.trajectory[last_index]));
-        normal0.normalize();
+        let normal0 = (trajectory[last_index] - trajectory[last_index - 1])
+            .set_cross(&(trajectory[last_index] - barycenter.state.trajectory[last_index]))
+            .set_normalized();
         let position0 = normal0.cross(&Vector3::unit_y());
         if normal0.magnitude() < std::f64::EPSILON {
             return self;
