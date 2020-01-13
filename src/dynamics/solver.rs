@@ -72,7 +72,7 @@ impl Solver {
             points[j].gradient = self.tmp[j][0];
         }
         for j in 0..points.len() {
-            self.state[j] = points[j].state.vector();
+            self.state[j] = points[j].state.to_vector();
             points[j].state.set_vector(&(self.state[j] + self.tmp[j][0] * half_dt));
         }
         for j in 0..points.len() {
