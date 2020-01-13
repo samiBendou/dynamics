@@ -1,5 +1,5 @@
 [package]
-name = "physics"
+name = "dynamics"
 version = "0.1.0"
 authors = ["bendou <sami.dahoux@etu.emse.fr>"]
 edition = "2018"
