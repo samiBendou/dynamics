@@ -1,5 +1,5 @@
-use crate::dynamics::point::Point3;
-use crate::units::consts::G_UNIV;
+use crate::consts::G_UNIV;
+use crate::point::Point3;
 
 pub fn gravity(point: &Point3, points: &Vec<Point3>) -> f64 {
     let mut ret = 0.;

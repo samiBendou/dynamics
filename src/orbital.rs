@@ -14,8 +14,8 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::common::{Average, random_color};
-use crate::dynamics::point::Point3;
-use crate::units::consts::G_UNIV;
+use crate::consts::G_UNIV;
+use crate::point::Point3;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {

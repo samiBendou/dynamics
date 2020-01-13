@@ -1,7 +1,7 @@
 use geomath::common::*;
 use geomath::vector::Vector6;
 
-use crate::dynamics::point::Point3;
+use crate::point::Point3;
 
 const FRAC_1_6: f64 = 1. / 6.;
 
@@ -12,7 +12,7 @@ pub enum Method {
 
 impl Method {
     pub fn next(&mut self) {
-        use crate::dynamics::solver::Method::*;
+        use crate::solver::Method::*;
         *self = match self {
             EulerExplicit => RungeKutta4,
             RungeKutta4 => EulerExplicit,
