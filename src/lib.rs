@@ -1,4 +1,9 @@
 pub mod common;
 pub mod dynamics;
 pub mod units;
-pub mod geometry;
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {}
+}

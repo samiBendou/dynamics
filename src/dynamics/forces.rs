@@ -1,6 +1,7 @@
+use geomath::common::*;
+use geomath::vector::*;
+
 use crate::dynamics::point::Point3;
-use crate::geometry::common::*;
-use crate::geometry::vector::*;
 use crate::units::consts::G_UNIV;
 
 const RESISTANCE: f64 = 0.001;

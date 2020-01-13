@@ -1,6 +1,6 @@
-use crate::geometry::common::*;
-use crate::geometry::point;
-use crate::geometry::vector::*;
+use geomath::common::*;
+use geomath::point;
+use geomath::vector::*;
 
 #[derive(Copy, Clone)]
 pub struct Point2 {

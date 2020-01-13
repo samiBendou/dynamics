@@ -1,6 +1,7 @@
+use geomath::common::*;
+use geomath::vector::Vector6;
+
 use crate::dynamics::point::Point3;
-use crate::geometry::common::*;
-use crate::geometry::vector::Vector6;
 
 const FRAC_1_6: f64 = 1. / 6.;
 

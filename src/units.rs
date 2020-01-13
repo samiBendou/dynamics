@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 use std::ops::{Div, DivAssign, Mul, MulAssign};
 
-use consts::*;
+use geomath::vector::Vector3;
 
-use crate::geometry::vector::Vector3;
+use consts::*;
 
 pub mod prefix;
 pub mod suffix;

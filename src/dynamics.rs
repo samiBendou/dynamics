@@ -2,11 +2,12 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{Index, IndexMut};
 
+use geomath;
+use geomath::common::*;
+use geomath::vector::{Vector3, Vector6};
+
 use crate::dynamics::point::Point3;
 use crate::dynamics::solver::Solver;
-use crate::geometry;
-use crate::geometry::common::*;
-use crate::geometry::vector::{Vector3, Vector6};
 
 pub mod point;
 pub mod forces;
@@ -122,7 +123,7 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn set_absolute(&mut self, origin: &geometry::point::Point3) -> &mut Self {
+    pub fn set_absolute(&mut self, origin: &geomath::point::Point3) -> &mut Self {
         self.barycenter.state += *origin;
         for body in self.points.iter_mut() {
             body.state += *origin;
@@ -131,7 +132,7 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn set_relative(&mut self, origin: &geometry::point::Point3) -> &mut Self {
+    pub fn set_relative(&mut self, origin: &geomath::point::Point3) -> &mut Self {
         self.barycenter.state -= *origin;
         *self.barycenter.state.trajectory.last_mut() -= *origin.trajectory.last();
         for body in self.points.iter_mut() {
@@ -142,7 +143,7 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn reset_origin(&mut self, origin: &geometry::point::Point3, old_origin: &geometry::point::Point3) -> &mut Self {
+    pub fn reset_origin(&mut self, origin: &geomath::point::Point3, old_origin: &geomath::point::Point3) -> &mut Self {
         self.barycenter.state.reset_origin(origin, old_origin);
         for body in self.points.iter_mut() {
             body.state.reset_origin(origin, old_origin);

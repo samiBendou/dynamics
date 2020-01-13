@@ -4,17 +4,17 @@ use std::io::prelude::*;
 use std::ops::{Index, IndexMut};
 use std::path::Path;
 
+use geomath::common::*;
+use geomath::common::coordinates::{Cartesian2, Cartesian3, Polar};
+use geomath::common::transforms::Rotation3;
+use geomath::matrix::Matrix3;
+use geomath::trajectory::{Trajectory3, TRAJECTORY_SIZE};
+use geomath::vector::Vector3;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::common::{Average, random_color};
 use crate::dynamics::point::Point3;
-use crate::geometry::common::*;
-use crate::geometry::common::coordinates::{Cartesian2, Cartesian3, Polar};
-use crate::geometry::common::transforms::Rotation3;
-use crate::geometry::matrix::Matrix3;
-use crate::geometry::trajectory::{Trajectory3, TRAJECTORY_SIZE};
-use crate::geometry::vector::Vector3;
 use crate::units::consts::G_UNIV;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]

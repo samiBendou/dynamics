@@ -2,10 +2,9 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{AddAssign, DivAssign};
 
+use geomath::trajectory::TRAJECTORY_SIZE;
 use rand::Rng;
 use serde::{de, de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
-
-use crate::geometry::trajectory::TRAJECTORY_SIZE;
 
 pub const AVERAGE_SIZE: usize = TRAJECTORY_SIZE - 1;
 
