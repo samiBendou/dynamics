@@ -23,6 +23,7 @@ pub struct Cluster {
 }
 
 impl Cluster {
+    #[inline]
     pub fn new(bodies: Vec<Point3>) -> Self {
         Cluster {
             points: bodies,
@@ -30,6 +31,7 @@ impl Cluster {
         }
     }
 
+    #[inline]
     pub fn empty() -> Self {
         Cluster::new(vec![])
     }
@@ -69,17 +71,20 @@ impl Cluster {
         ret * 0.5
     }
 
+    #[inline]
     pub fn push(&mut self, point: Point3) -> &mut Self {
         self.points.push(point);
         self.update_barycenter()
     }
 
+    #[inline]
     pub fn pop(&mut self) -> Option<Point3> {
         let ret = self.points.pop();
         self.update_barycenter();
         ret
     }
 
+    #[inline]
     pub fn remove(&mut self, i: usize) -> Point3 {
         let ret = self.points.remove(i);
         self.update_barycenter();
@@ -90,6 +95,26 @@ impl Cluster {
     pub fn reset0_at(&mut self, i: usize) -> &mut Self {
         self.points[i].state.reset0();
         self.points[i].state.trajectory.reset0();
+        self.update_barycenter()
+    }
+
+    #[inline]
+    pub fn reset_at(&mut self, i: usize, state: &geomath::point::Point3) -> &mut Self {
+        self.points[i].state.reset(state);
+        self.points[i].state.trajectory.reset(&state.position);
+        self.update_barycenter()
+    }
+
+    #[inline]
+    pub fn reset_position_at(&mut self, i: usize, position: &Vector3) -> &mut Self {
+        self.points[i].state.position = *position;
+        self.points[i].state.trajectory.reset(position);
+        self.update_barycenter()
+    }
+
+    #[inline]
+    pub fn reset_speed_at(&mut self, i: usize, speed: &Vector3) -> &mut Self {
+        self.points[i].state.speed = *speed;
         self.update_barycenter()
     }
 
@@ -154,18 +179,6 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn update_barycenter(&mut self) -> &mut Self {
-        self.barycenter.mass = 0.;
-        self.barycenter.state.reset0();
-        for body in self.points.iter() {
-            self.barycenter.mass += body.mass;
-            self.barycenter.state += body.state * body.mass;
-        }
-        self.barycenter.state /= self.barycenter.mass;
-        self
-    }
-
-    #[inline]
     pub fn reset_trajectory(&mut self) -> &mut Self {
         self.barycenter.state.trajectory.reset(&self.barycenter.state.position);
         for body in self.points.iter_mut() {
@@ -180,6 +193,18 @@ impl Cluster {
         for body in self.points.iter_mut() {
             body.state.update_trajectory();
         }
+        self
+    }
+
+    #[inline]
+    fn update_barycenter(&mut self) -> &mut Self {
+        self.barycenter.mass = 0.;
+        self.barycenter.state.reset0();
+        for body in self.points.iter() {
+            self.barycenter.mass += body.mass;
+            self.barycenter.state += body.state * body.mass;
+        }
+        self.barycenter.state /= self.barycenter.mass;
         self
     }
 }

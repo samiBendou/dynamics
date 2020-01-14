@@ -20,7 +20,6 @@ impl Method {
     }
 }
 
-
 pub struct Solver {
     pub dt: f64,
     pub iterations: u32,
