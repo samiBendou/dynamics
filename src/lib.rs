@@ -150,35 +150,6 @@ impl Cluster {
     }
 
     #[inline]
-    pub fn set_absolute(&mut self, origin: &geomath::point::Point3) -> &mut Self {
-        self.barycenter.state += *origin;
-        for body in self.points.iter_mut() {
-            body.state += *origin;
-        }
-        self
-    }
-
-    #[inline]
-    pub fn set_relative(&mut self, origin: &geomath::point::Point3) -> &mut Self {
-        self.barycenter.state -= *origin;
-        *self.barycenter.state.trajectory.last_mut() -= *origin.trajectory.last();
-        for body in self.points.iter_mut() {
-            body.state -= *origin;
-            *body.state.trajectory.last_mut() -= *origin.trajectory.last();
-        }
-        self
-    }
-
-    #[inline]
-    pub fn reset_origin(&mut self, origin: &geomath::point::Point3, old_origin: &geomath::point::Point3) -> &mut Self {
-        self.barycenter.state.reset_origin(origin, old_origin);
-        for body in self.points.iter_mut() {
-            body.state.reset_origin(origin, old_origin);
-        }
-        self
-    }
-
-    #[inline]
     pub fn reset_trajectory(&mut self) -> &mut Self {
         self.barycenter.state.trajectory.reset(&self.barycenter.state.position);
         for body in self.points.iter_mut() {
