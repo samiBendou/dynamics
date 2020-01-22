@@ -5,10 +5,10 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 
 use geomath::common::*;
-use geomath::common::coordinates::{Cartesian2, Cartesian3, Polar};
+use geomath::common::coordinates::Polar;
 use geomath::common::transforms::Rotation3;
 use geomath::matrix::Matrix3;
-use geomath::trajectory::{Trajectory3, TRAJECTORY_SIZE};
+use geomath::trajectory::{Trajectory3, consts::TRAJECTORY_SIZE};
 use geomath::vector::Vector3;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::common::{Average, random_color};
 use crate::consts::G_UNIV;
 use crate::point::Point3;
+use geomath::vector;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
@@ -112,7 +113,7 @@ impl Orbit {
         let normal0 = *(trajectory[last_index] - trajectory[last_index - 1])
             .set_cross(&(trajectory[last_index] - barycenter.state.trajectory[last_index]))
             .set_normalized();
-        let position0 = normal0.cross(&Vector3::unit_y());
+        let position0 = normal0.cross(&vector::consts::EY_3);
         if normal0.magnitude() < std::f64::EPSILON {
             return self;
         }
@@ -124,7 +125,7 @@ impl Orbit {
         for i in 0..TRAJECTORY_SIZE {
             position = trajectory[i] - barycenter.state.trajectory[i];
             normal = *position.cross(&position0).set_normalized();
-            inclinations.push(position.angle(&Vector3::unit_z()));
+            inclinations.push(position.angle(&vector::consts::EZ_3));
             distances.push(position.magnitude());
             if normal | normal0 > 0. {
                 anomalies.push(position.angle(&position0));
@@ -195,7 +196,7 @@ impl Orbit {
         let argument = *self.inclination.argument.get() * rad_to_deg;
         let value = *self.inclination.value.get() * rad_to_deg;
         let mag = self.radius_at(true_anomaly);
-        let rotation_node = Matrix3::from_rotation(value, Vector3::unit_x().set_rotation_z(argument));
+        let rotation_node = Matrix3::from_rotation(value, vector::consts::EX_3.set_rotation_z(argument));
         let rotation_z = Matrix3::from_rotation_z(*self.argument.get() * rad_to_deg);
         rotation_node * (rotation_z * Vector3::from_polar(mag, true_anomaly))
     }
@@ -210,7 +211,7 @@ impl Orbit {
         let value = *self.inclination.value.get() * rad_to_deg;
         let mag = (self.mu * (2. / self.radius_at(true_anomaly) - 1. / self.semi_major())).sqrt();
         let phi = true_anomaly + pi_frac_2 - self.flight_angle_at(true_anomaly);
-        let rotation_node = Matrix3::from_rotation(value, Vector3::unit_x().set_rotation_z(argument));
+        let rotation_node = Matrix3::from_rotation(value, vector::consts::EX_3.set_rotation_z(argument));
         let rotation_z = Matrix3::from_rotation_z(*self.argument.get() * rad_to_deg);
         rotation_node * (rotation_z * Vector3::from_polar(mag, phi))
     }

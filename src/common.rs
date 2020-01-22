@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::ops::{AddAssign, DivAssign};
 
-use geomath::trajectory::TRAJECTORY_SIZE;
+use geomath::trajectory::consts::TRAJECTORY_SIZE;
 use rand::Rng;
 use serde::{de, de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
