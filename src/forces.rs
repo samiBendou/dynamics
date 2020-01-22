@@ -1,5 +1,5 @@
 use geomath::common::*;
-use geomath::vector::*;
+use geomath::vector::{*, self};
 
 use crate::consts::G_UNIV;
 use crate::point::Point3;
@@ -14,7 +14,7 @@ pub fn nav_stokes(point: &Point3) -> Vector6 {
 
 pub fn gravity(point: &Point3, points: &Vec<Point3>) -> Vector6 {
     let len = points.len();
-    let mut acceleration = Vector3::zeros();
+    let mut acceleration = vector::consts::ZEROS_3;
     let mut distance: Vector3;
     let mut magnitude: f64;
     for i in 0..len {

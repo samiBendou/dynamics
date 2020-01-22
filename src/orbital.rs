@@ -203,7 +203,7 @@ impl Orbit {
 
     pub fn speed_at(&self, true_anomaly: f64) -> Vector3 {
         if self.is_degenerated() {
-            return Vector3::zeros();
+            return vector::consts::ZEROS_3;
         }
         let pi_frac_2 = std::f64::consts::FRAC_PI_2;
         let rad_to_deg = std::f64::consts::PI / 180.;
