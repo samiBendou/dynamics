@@ -1,4 +1,4 @@
-use geomath::common::*;
+use geomath::prelude::*;
 use geomath::point;
 use geomath::vector::*;
 

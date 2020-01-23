@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::ops::{Index, IndexMut};
 
 use geomath;
-use geomath::common::*;
+use geomath::prelude::*;
 use geomath::vector::{Vector3, Vector6};
 
 use crate::point::Point3;

@@ -1,4 +1,4 @@
-use geomath::common::*;
+use geomath::prelude::*;
 use geomath::vector::Vector6;
 
 use crate::point::Point3;

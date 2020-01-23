@@ -4,9 +4,9 @@ use std::io::prelude::*;
 use std::ops::{Index, IndexMut};
 use std::path::Path;
 
-use geomath::common::*;
-use geomath::common::coordinates::Polar;
-use geomath::common::transforms::Rotation3;
+use geomath::prelude::*;
+use geomath::prelude::coordinates::Polar;
+use geomath::prelude::transforms::Rotation3;
 use geomath::matrix::Matrix3;
 use geomath::trajectory::{Trajectory3, consts::TRAJECTORY_SIZE};
 use geomath::vector::Vector3;

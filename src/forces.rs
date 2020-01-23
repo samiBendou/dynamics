@@ -1,4 +1,4 @@
-use geomath::common::*;
+use geomath::prelude::*;
 use geomath::vector::{*, self};
 
 use crate::consts::G_UNIV;
