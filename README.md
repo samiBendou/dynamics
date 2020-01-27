@@ -50,8 +50,3 @@ cluster.apply(solver, |point, points| {
 });
 ```
 The cluster can then easily be used to create an animation with points using piston for example.
-
-## Install
-For now since geomath is not yet on crates.io you need to bind the two frameworks manually.
-Clone [geomath](https://github.com/samiBendou/geomath)'s repo and modify your Cargo.toml to match
-the path of geomath with the path of the cloned repo.
