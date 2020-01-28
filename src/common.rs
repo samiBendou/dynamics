@@ -6,13 +6,27 @@ use geomath::trajectory::consts::TRAJECTORY_SIZE;
 use rand::Rng;
 use serde::{de, de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
+/// Fixed number of samples used for running average
 pub const AVERAGE_SIZE: usize = TRAJECTORY_SIZE - 1;
 
+/// Generates a random RGBA color
+///
+/// RGB components are uniformly distributed between 0 and 1, opacity is always set to 1.
 pub fn random_color() -> [f32; 4] {
     let mut rng = rand::thread_rng();
     [rng.gen(), rng.gen(), rng.gen(), 1.]
 }
 
+/// Average numerical value
+///
+/// This structure allows to perform running averages for numerical values using a circular buffer.
+///
+/// **Note** Use the `push` method to add a sample to the average
+///
+/// ## Conventions
+/// * All the averages are performed on the same constant number of samples
+/// * When pushing a sample, the average gets updated and the oldest sample pushed gets removed
+/// * When averages are serialized, only the current value of average is in fact serialize
 #[derive(Copy, Clone)]
 pub struct Average<T> {
     index: usize,
@@ -22,10 +36,12 @@ pub struct Average<T> {
 
 impl<T> Average<T> where
     T: Copy + AddAssign<T> + DivAssign<f64> + Serialize + Deserialize {
+    /// Construct a new average with single initial sample
     pub fn new(val: &T) -> Average<T> {
         Average { index: 0, values: [*val; AVERAGE_SIZE], average: *val }
     }
 
+    /// Add a value to the buffer
     pub fn push(&mut self, val: &T) -> &mut Self {
         self.average = *val;
         for val in self.values.iter() {
@@ -37,6 +53,7 @@ impl<T> Average<T> where
         self
     }
 
+    /// Get the value of the average
     pub fn get(&self) -> &T {
         &self.average
     }

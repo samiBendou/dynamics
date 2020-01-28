@@ -32,21 +32,6 @@ Furthermore, I needed an API that will ease the implementation of [nbodies](http
 3D simulator.
 
 ## Usage
-API is made to be very straightforward, it's built using [geomath](https://github.com/samiBendou/geomath) framework.
-```rust
-use geomath::*;
-use dynamics::*;
-use vector::*;
+API is made to be very straightforward, built using [geomath](https://github.com/samiBendou/geomath) framework.
 
-let position = vector::consts::ZEROS_3; // set initial position
-let speed = vector::consts::ONES_3; // set initial speed
-let solver = dynamics::Solver::new(0.1, 1, dynamics::Method::RungeKutta4); // initialize solver with dt = 0.1 and 1 iteration per step
-let point = dynamics::Point3::inertial(position, speed, 1.); // create a point of mass 1 kg with position and speed 
-let mut cluster = dynamics::Cluster::new(vec![point]); // create a cluster containing the point
-
-// Apply an acceleration to the points of the cluster
-cluster.apply(solver, |point, points| {
-    Vector6::concat(&point.speed, &vector::consts::N_EZ_3) // Constant downwards unit acceleration for each point
-});
-```
 The cluster can then easily be used to create an animation with points using piston for example.

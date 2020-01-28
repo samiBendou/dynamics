@@ -1,3 +1,20 @@
+//!
+//! This module provide structures to manipulate Kepler's orbits:
+//! * Compute elliptic characteristics and Kepler's elements
+//! * JSON Serialization and deserialization
+//! * Draw trajectories and compute speed
+//! * Orbit interpolation from trajectory
+//! * Random celestial body generation
+//!
+//! ## Conventions
+//! * All the characteristics of the orbit are averages, this allows to perform
+//! smooth orbital interpolation
+//! * All the method that computes instantaneous characteristics around the orbit
+//! take the true anomaly in radians as parameter.
+//! * Characteristics are relative to the orbited body
+//!
+//! **Note :** True anomaly is the angular position of a point from the orbited body
+//!
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
@@ -18,16 +35,23 @@ use crate::consts::G_UNIV;
 use crate::point::Point3;
 use geomath::vector;
 
+/// Kind of body orbiting
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
+    /// Artificial satellite
     Artificial,
+    /// Terrestrial body (Earth, Venus, Mars, ...)
     Terrestrial,
+    /// Gas giant (Jupiter, Saturn, Uranus, ...)
     Giant,
+    /// Star similar to the sun
     Star,
+    /// Black hole
     Hole,
 }
 
 impl Kind {
+    /// Generate a uniformly distributed random kind
     pub fn random() -> Kind {
         use Kind::*;
         let mut rng = rand::thread_rng();
@@ -39,7 +63,7 @@ impl Kind {
             _ => Artificial,
         }
     }
-
+    /// Generate a uniformly distributed random body mass (kilograms)
     pub fn random_mass(&self) -> f64 {
         let mut rng = rand::thread_rng();
         match self {
@@ -51,7 +75,7 @@ impl Kind {
         }
     }
 
-
+    /// Generate a uniformly distributed body radius (meters)
     pub fn random_radius(&self) -> f64 {
         let mut rng = rand::thread_rng();
         match self {
@@ -63,6 +87,9 @@ impl Kind {
         }
     }
 
+    /// Generate a scaled body radius in px
+    ///
+    /// Mainly used to avoid drawing body at scale which can easily make disappear the smallest ones.
     pub fn scaled_radius(&self, radius: f64) -> f64 {
         radius / 10f64.powf(radius.log10()) + match self {
             Kind::Artificial => 1.,
@@ -74,28 +101,45 @@ impl Kind {
     }
 }
 
+/// Orbital inclination
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Inclination {
+    /// Inclination value (degrees)
     pub value: Average<f64>,
+    /// Argument of inclination from periapsis (degrees)
     pub argument: Average<f64>,
 }
 
 impl Inclination {
+    /// Construct a zero inclination
+    ///
+    /// The orbit generated with this inclination will belong to the **(Oxy)** plane.
     pub fn zeros() -> Self {
         Inclination { value: Average::new(&0.0), argument: Average::new(&0.0) }
     }
 }
 
+/// Orbital parameters
+///
+/// This class encapsulates all the orbital data in order analyze and draw the orbit.
+///
+/// It provides many methods to compute orbital elements.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Orbit {
+    /// Gravitational parameter (SI)
     pub mu: f64,
+    /// Apoapsis distance (meters)
     pub apoapsis: Average<f64>,
+    /// Periapsis distance (meters)
     pub periapsis: Average<f64>,
+    /// Argument of the periapsis (degrees)
     pub argument: Average<f64>,
+    /// Inclination of the orbit
     pub inclination: Inclination,
 }
 
 impl Orbit {
+    /// Construct a zero orbit
     pub fn zeros() -> Self {
         Orbit {
             mu: 0.0,
@@ -106,6 +150,9 @@ impl Orbit {
         }
     }
 
+    /// Set this orbit from given trajectory and barycenter
+    ///
+    /// The barycenter can be considered as the orbited body if the mass of the orbiting body is negligible.
     pub fn set_interpolation(&mut self, trajectory: &Trajectory3, barycenter: &Point3) -> &Self {
         let rad_to_deg = 180. / std::f64::consts::PI;
         let pi_frac_2 = std::f64::consts::FRAC_PI_2;
@@ -146,14 +193,19 @@ impl Orbit {
         self
     }
 
+    /// Get semi-minor axis (meters)
     pub fn semi_minor(&self) -> f64 {
         (self.apoapsis.get() * self.periapsis.get()).sqrt()
     }
 
+    /// Get semi-major axis (meters)
     pub fn semi_major(&self) -> f64 {
         0.5 * (self.apoapsis.get() + self.periapsis.get())
     }
 
+    /// Check if the orbit is degenerated
+    ///
+    /// An orbit is degenerated when the conic representing its trajectory is.
     pub fn is_degenerated(&self) -> bool {
         let epsilon_f64 = std::f64::EPSILON;
         if self.semi_minor() < epsilon_f64 || self.semi_major() < epsilon_f64 {
@@ -163,6 +215,7 @@ impl Orbit {
         }
     }
 
+    /// Get scalar eccentricity of the orbit
     pub fn eccentricity(&self) -> f64 {
         let ra = self.apoapsis.get();
         let rp = self.periapsis.get();
@@ -174,23 +227,29 @@ impl Orbit {
         }
     }
 
+    /// Get the distance from orbited body at given true anomaly (meters)
     pub fn radius_at(&self, true_anomaly: f64) -> f64 {
         let a = self.semi_major();
         let epsilon = self.eccentricity();
         a * (1. - epsilon * epsilon) / (1. + epsilon * true_anomaly.cos())
     }
 
+    /// Get the eccentric anomaly at given true anomaly (radians)
     pub fn eccentric_anomaly_at(&self, true_anomaly: f64) -> f64 {
         let epsilon = self.eccentricity();
         (true_anomaly.sin() * (1. - epsilon * epsilon).sqrt() / (1. + epsilon * true_anomaly.cos())).atan()
     }
 
+    /// Get the flight angle at given true anomaly (radians)
+    ///
+    /// The flight path angle is the angle between the local horizontal and the velocity vector.
     pub fn flight_angle_at(&self, true_anomaly: f64) -> f64 {
         let epsilon = self.eccentricity();
         let ec = epsilon * true_anomaly.cos();
         ((1. + ec) / (1. + epsilon * epsilon + 2. * ec).sqrt()).min(1.0).acos()
     }
 
+    /// Get the radius/position vector at given true anomaly (meters)
     pub fn position_at(&self, true_anomaly: f64) -> Vector3 {
         let rad_to_deg = std::f64::consts::PI / 180.;
         let argument = *self.inclination.argument.get() * rad_to_deg;
@@ -201,6 +260,7 @@ impl Orbit {
         rotation_node * (rotation_z * Vector3::from_polar(mag, true_anomaly))
     }
 
+    /// Get the speed at given true anomaly (meters per second)
     pub fn speed_at(&self, true_anomaly: f64) -> Vector3 {
         if self.is_degenerated() {
             return vector::consts::ZEROS_3;
@@ -233,17 +293,27 @@ impl Orbit {
     }
 }
 
+/// Celestial body
+///
+/// Encapsulates the basic characteristics of a celestial body in order to draw and JSON it.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Body {
+    /// Identifier of the body
     pub name: String,
+    /// Mass of the body (kilograms)
     pub mass: f64,
+    /// Kind of the body
     pub kind: Kind,
+    /// Color of the body (RGBA)
     pub color: [f32; 4],
+    /// Radius of the body (meters)
     pub radius: f64,
+    /// Orbit of the body
     pub orbit: Orbit,
 }
 
 impl Body {
+    /// Construct a default body
     pub fn new() -> Self {
         Body {
             name: "untitled".to_string(),
@@ -255,6 +325,7 @@ impl Body {
         }
     }
 
+    /// Generate a random body
     pub fn random() -> Self {
         let mut rng = rand::thread_rng();
         let kind = Kind::random();
@@ -272,8 +343,12 @@ impl Body {
     }
 }
 
+/// Cluster of celestial bodies
+///
+/// Encapsulates an array of bodies that can represent a stellar system in order to draw and JSON it.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Cluster {
+    /// Array of celestial bodies
     pub bodies: Vec<Body>
 }
 
@@ -284,6 +359,7 @@ impl From<Vec<Body>> for Cluster {
 }
 
 impl Cluster {
+    /// Construct a cluster from a given JSON file path
     pub fn from_file(path: &Path) -> Result<Self, Box<dyn Error>> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
@@ -292,6 +368,11 @@ impl Cluster {
         Ok(Cluster::from(bodies))
     }
 
+    /// Update interpolated orbit of the bodies from given dynamic points
+    ///
+    /// Sets interpolated orbits from barycenter using points's trajectories.
+    ///
+    /// **Note :** Points and bodies are supposed to be ordered the same.
     pub fn update_orbits(&mut self, points: &Vec<Point3>, barycenter: &Point3) -> &mut Self {
         for i in 0..points.len() {
             self.bodies[i].orbit.set_interpolation(&points[i].state.trajectory, barycenter);
@@ -299,17 +380,20 @@ impl Cluster {
         self
     }
 
+    /// Push a body into the cluster
     #[inline]
     pub fn push(&mut self, body: Body) -> &mut Self {
         self.bodies.push(body);
         self
     }
 
+    /// Pop a body from the cluster
     #[inline]
     pub fn pop(&mut self) -> Option<Body> {
         self.bodies.pop()
     }
 
+    /// Remove a body at given cluster's index
     #[inline]
     pub fn remove(&mut self, i: usize) -> Body {
         self.bodies.remove(i)
@@ -328,22 +412,6 @@ impl IndexMut<usize> for Cluster {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.bodies[index]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    mod cluster {
-        use std::path::Path;
-
-        use super::super::Cluster;
-
-        #[test]
-        fn simple_deserialize() {
-            let path: &Path = Path::new("data/solar_system.json");
-            let cluster = Cluster::from_file(path);
-            println!("{:?}", cluster);
-        }
     }
 }
 
